@@ -166,7 +166,7 @@ class RateLimiter:
 
 # 全域流量限制器實例 - 調整限制以適應實際使用情況
 gemini_limiter = RateLimiter(
-    requests_per_minute=2,   # 降低每分鐘請求數限制
-    requests_per_day=30,     # 降低每日請求數限制
-    retry_after=60          # 增加重試間隔
+    requests_per_minute=10,  # 提高每分鐘請求數限制
+    requests_per_day=100,    # 提高每日請求數限制
+    retry_after=30          # 減少重試間隔
 )

@@ -44,21 +44,31 @@ def init_genai():
         logger.error(f"初始化 Gemini API 時發生錯誤: {str(e)}")
         return False
 
-def get_gemini_response(prompt, conversation_history=None, max_retries=3, retry_delay=5):
+def get_gemini_response(prompt, conversation_history=None, max_retries=5, retry_delay=3):
     """
     獲取 Gemini 的回應，包含重試機制和配額限制處理
     
     參數:
         prompt: 用戶的問題或提示
         conversation_history: 對話歷史記錄，用於維持上下文 (選填)
-        max_retries: 最大重試次數 (默認為 3)
-        retry_delay: 重試前的等待秒數 (默認為 5)
+        max_retries: 最大重試次數 (默認為 5)
+        retry_delay: 重試前的等待秒數 (默認為 3)
         
     返回:
         回應文本，若有錯誤則返回錯誤訊息或備用回應
     """
+    # 確保提示不為空
+    if not prompt or prompt.strip() == "":
+        return "請提供一個問題或指示，我會盡力回答。"
+    
+    # 初始化 Gemini API
     if not init_genai():
+        logger.error("Gemini API 初始化失敗")
         return "抱歉，Gemini 服務目前無法使用。請確認 API 金鑰設定正確。"
+    
+    # 記錄詳細的提示資訊，但保護隱私
+    safe_prompt = prompt[:20] + "..." if len(prompt) > 20 else prompt
+    logger.info(f"處理提示: '{safe_prompt}'，歷史記錄長度: {len(conversation_history) if conversation_history else 0}")
     
     # 可供使用的模型列表，按優先順序排列
     models = ['gemini-1.5-pro', 'gemini-1.0-pro', 'gemini-pro']
@@ -179,14 +189,20 @@ def parse_retry_delay(error_message):
 def get_backup_response(prompt):
     """提供基本的備用回應，當 Gemini API 不可用時使用"""
     
+    if not prompt:
+        return "您好！請問有什麼我可以幫助您的嗎？"
+    
     # 簡單的關鍵詞匹配，用於判斷問題類型和提供適當回應
-    prompt_lower = prompt.lower()
+    prompt_lower = prompt.lower().strip()
     
     # 問候類
     if any(word in prompt_lower for word in ['你好', '哈囉', '嗨', 'hi', 'hello', '早安', '午安', '晚安']):
-        greetings = ["你好！很高興為您服務。", "哈囉！有什麼我能幫助您的嗎？", 
-                     "嗨！今天有什麼我可以協助您的？", 
-                     "你好啊！很高興收到您的訊息。"]
+        greetings = [
+            "你好！很高興為您服務。有什麼我能幫助您的嗎？", 
+            "哈囉！有什麼我能幫助您的嗎？今天過得如何？", 
+            "嗨！今天有什麼我可以協助您的？很高興見到您！", 
+            "你好啊！很高興收到您的訊息。希望您今天過得愉快！"
+        ]
         return random.choice(greetings)
         
     # 感謝類
