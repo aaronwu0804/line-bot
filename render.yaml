@@ -6,7 +6,7 @@ services:
     repo: https://github.com/aaronwu0804/line-bot.git
     branch: main
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    startCommand: gunicorn app:app --timeout 120 --workers 1 --threads 2
     plan: free
     envVars:
       - key: PORT
