@@ -57,9 +57,18 @@ GEMINI_API_KEY = os.getenv('GEMINI_API_KEY') or os.getenv('GEMINI_KEY')
 # 檢查並載入Gemini API
 if GEMINI_API_KEY:
     try:
+        # 導入套件並設置API金鑰
         import google.generativeai as genai
         genai.configure(api_key=GEMINI_API_KEY)
-        logger.info("Gemini API已成功載入")
+        
+        # 測試API連接並列出可用模型
+        try:
+            models = list(genai.list_models())
+            model_names = [model.name for model in models]
+            logger.info(f"成功連接Gemini API，可用模型: {model_names}")
+        except Exception as api_e:
+            logger.warning(f"Gemini API金鑰已設置，但測試連接失敗: {str(api_e)}")
+    
     except ImportError:
         logger.warning("未能載入google-generativeai套件，AI回應功能將受限")
         logger.warning("請確認已安裝該套件：pip install google-generativeai>=0.3.1")
@@ -148,15 +157,32 @@ def health():
     if status == "warning":
         message += " - MISSING CREDENTIALS"
     
+    # 檢查Gemini API狀態
+    gemini_status = "disabled"
+    if GEMINI_API_KEY:
+        if 'genai' in globals():
+            try:
+                # 簡單測試API連接
+                models = list(genai.list_models())
+                if models:
+                    gemini_status = "active"
+                    available_models = [model.name for model in models]
+                else:
+                    gemini_status = "configured_no_models"
+            except Exception:
+                gemini_status = "configured_error"
+        else:
+            gemini_status = "configured_not_loaded"
+    
     return jsonify({
         "status": status,
         "message": message,
-        "version": "2.0.0",
+        "version": "2.0.1",  # 已更新版本號
         "timestamp": str(os.popen('date').read().strip()),
         "environment": {
             "LINE_CHANNEL_ACCESS_TOKEN": "configured" if LINE_CHANNEL_ACCESS_TOKEN else "missing",
             "LINE_CHANNEL_SECRET": "configured" if LINE_CHANNEL_SECRET else "missing",
-            "GEMINI_API": "configured" if GEMINI_API_KEY else "disabled"
+            "GEMINI_API": gemini_status
         }
     })
 
@@ -214,16 +240,33 @@ def get_ai_response(message):
     # 嘗試使用Gemini API (如果可用)
     try:
         if GEMINI_API_KEY and 'genai' in globals():
-            # 初始化生成式模型
-            model = genai.GenerativeModel('gemini-pro')
-            
-            # 添加提示詞引導回答風格和語言
-            prompt = f"""請以友好、專業、簡潔的方式用繁體中文回答以下問題。
+            try:
+                # 獲取可用模型列表
+                available_models = [model.name for model in genai.list_models()]
+                logger.info(f"可用的Gemini模型: {available_models}")
+                
+                # 選擇適合的模型
+                model_name = None
+                for name in ["gemini-1.5-pro", "gemini-pro", "gemini-1.0-pro"]:
+                    if name in str(available_models):
+                        model_name = name
+                        break
+                
+                if not model_name:
+                    logger.warning("找不到合適的Gemini模型，嘗試使用預設模型名稱")
+                    model_name = "gemini-pro"  # 嘗試使用預設名稱
+                
+                logger.info(f"使用Gemini模型: {model_name}")
+                
+                # 初始化生成式模型
+                model = genai.GenerativeModel(model_name)
+                
+                # 添加提示詞引導回答風格和語言
+                prompt = f"""請以友好、專業、簡潔的方式用繁體中文回答以下問題。
 如果問題涉及敏感內容或有害內容，請禮貌拒絕並解釋原因。
 問題: {user_question}"""
-            
-            # 生成回應
-            try:
+                
+                # 生成回應
                 response = model.generate_content(prompt)
                 if response and hasattr(response, 'text') and response.text:
                     return response.text
