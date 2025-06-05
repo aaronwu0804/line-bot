@@ -91,6 +91,27 @@ def send_test_webhook(url, event, channel_secret=None):
     logger.info(f"事件內容: {event_json}")
     logger.info(f"生成的簽名: {signature}")
     
+    # 測試URL是否可訪問
+    try:
+        # 先測試主頁，看看服務是否運行
+        logger.info(f"測試服務主頁: {url.rsplit('/', 1)[0]}")
+        home_url = url.rsplit('/', 1)[0]
+        home_response = requests.get(home_url, timeout=10)
+        logger.info(f"主頁回應碼: {home_response.status_code}")
+        logger.info(f"主頁前100字符: {home_response.text[:100]}")
+    except Exception as e:
+        logger.warning(f"無法訪問服務主頁: {e}")
+    
+    # 測試健康檢查端點
+    try:
+        health_url = f"{url.rsplit('/', 1)[0]}/health"
+        logger.info(f"測試健康檢查: {health_url}")
+        health_response = requests.get(health_url, timeout=10) 
+        logger.info(f"健康檢查回應碼: {health_response.status_code}")
+        logger.info(f"健康檢查回應: {health_response.text}")
+    except Exception as e:
+        logger.warning(f"無法訪問健康檢查: {e}")
+    
     try:
         # 將超時時間設為較短，因為我們只關心請求是否被接受，不等待處理完成
         response = requests.post(

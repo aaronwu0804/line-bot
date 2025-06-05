@@ -15,6 +15,12 @@ import requests
 from datetime import datetime
 from dotenv import load_dotenv
 
+# 特殊啟動日誌，用於確認正確的應用程式被啟動
+print("="*80)
+print("啟動 LINE Bot Webhook 服務 - 2025年6月5日更新版")
+print("包含AI對話功能和對話記憶功能")
+print("="*80)
+
 # 設定 Python 路徑
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(current_dir)
