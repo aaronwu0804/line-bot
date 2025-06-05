@@ -7,7 +7,10 @@
 
 import os
 import sys
+import time
+import threading
 import logging
+import requests
 from flask import Flask, request, abort, jsonify
 from linebot.v3 import WebhookHandler
 from linebot.v3.exceptions import InvalidSignatureError
@@ -18,7 +21,8 @@ from linebot.v3.webhooks import MessageEvent, TextMessageContent
 
 print("="*80)
 print("啟動 LINE Bot Webhook 緊急修復服務 - 2025年6月5日")
-print("整合版 - 直接從app.py啟動，避免LINE SDK衝突")
+print("整合版(優化版) - 直接從app.py啟動，避免LINE SDK衝突")
+print("添加自動保活機制，防止Render休眠")
 print("="*80)
 
 # 初始化Flask應用
@@ -43,6 +47,7 @@ except Exception as e:
 # 環境變數
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv('LINE_CHANNEL_ACCESS_TOKEN')
 LINE_CHANNEL_SECRET = os.getenv('LINE_CHANNEL_SECRET')
+RENDER_SERVICE_URL = os.getenv('RENDER_SERVICE_URL')
 
 if not LINE_CHANNEL_ACCESS_TOKEN or not LINE_CHANNEL_SECRET:
     logger.error("缺少LINE API憑證")
@@ -52,6 +57,38 @@ if not LINE_CHANNEL_ACCESS_TOKEN or not LINE_CHANNEL_SECRET:
         LINE_CHANNEL_SECRET = "DUMMY_SECRET"
         LINE_CHANNEL_ACCESS_TOKEN = "DUMMY_TOKEN"
         logger.warning("使用虛擬憑證繼續執行 (僅供開發環境)")
+
+# 自我保活機制
+def self_ping_service():
+    """定期ping自己以保持服務活躍的後台執行緒"""
+    if not RENDER_SERVICE_URL:
+        logger.warning("未設定RENDER_SERVICE_URL，自我保活機制未啟用")
+        return
+
+    service_url = RENDER_SERVICE_URL
+    # 確保URL格式正確
+    if not service_url.startswith(('http://', 'https://')):
+        service_url = f"https://{service_url}"
+    
+    health_url = f"{service_url}/health"
+    logger.info(f"啟動自我保活機制，每14分鐘ping一次: {health_url}")
+    
+    while True:
+        try:
+            logger.info(f"[自我保活] Pinging {health_url}")
+            response = requests.get(health_url, timeout=10)
+            logger.info(f"[自我保活] 收到回應: {response.status_code}")
+        except Exception as e:
+            logger.error(f"[自我保活] 錯誤: {e}")
+        
+        # 休眠14分鐘（Render Free Tier休眠時間為15分鐘）
+        time.sleep(14 * 60)
+
+# 在Render環境中啟動自我保活機制
+if os.getenv('RENDER', ''):
+    ping_thread = threading.Thread(target=self_ping_service, daemon=True)
+    ping_thread.start()
+    logger.info("自我保活機制已在後台啟動")
 
 # LINE Bot API設置
 configuration = Configuration(access_token=LINE_CHANNEL_ACCESS_TOKEN)
