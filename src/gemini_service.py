@@ -83,13 +83,16 @@ def get_gemini_response(prompt, conversation_history=None, max_retries=5, retry_
                     model = genai.GenerativeModel(model_name)
                     logger.info(f"嘗試使用模型: {model_name}")
                     
-                    # 如果有對話歷史，使用 chat 模式
+                    # 如果有對話歷史，包含歷史記錄
                     if conversation_history:
-                        chat = model.start_chat(history=conversation_history)
-                        response = chat.send_message(prompt)
+                        logger.info(f"使用對話歷史，長度: {len(conversation_history)}")
+                        # 將完整的對話歷史直接傳給 generate_content
+                        # 包括當前的問題
+                        response = model.generate_content(conversation_history + [{"role": "user", "parts": [prompt]}])
                         return response.text
                     else:
                         # 單次回應
+                        logger.info("沒有對話歷史，使用單次查詢")
                         response = model.generate_content(prompt)
                         return response.text
                 except Exception as e:
@@ -139,13 +142,16 @@ def get_gemini_response(prompt, conversation_history=None, max_retries=5, retry_
                 model = genai.GenerativeModel(model_name)
                 logger.info(f"嘗試使用模型: {model_name} (嘗試 {retry_count + 1}/{max_retries})")
                 
-                # 如果有對話歷史，使用 chat 模式
+                # 如果有對話歷史，包含歷史記錄
                 if conversation_history:
-                    chat = model.start_chat(history=conversation_history)
-                    response = chat.send_message(prompt)
+                    logger.info(f"使用對話歷史，長度: {len(conversation_history)}")
+                    # 將完整的對話歷史直接傳給 generate_content
+                    # 包括當前的問題
+                    response = model.generate_content(conversation_history + [{"role": "user", "parts": [prompt]}])
                     return response.text
                 else:
                     # 單次回應
+                    logger.info("沒有對話歷史，使用單次查詢")
                     response = model.generate_content(prompt)
                     return response.text
                     
