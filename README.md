@@ -1,6 +1,6 @@
-# Morning Post Bot
+# Morning Post Bot - 獨立LINE Bot專案
 
-這是一個自動化的 LINE Bot 專案，用於每天定時發送 AI 生成的早安圖片和問候訊息，並支援與 Gemini AI 的對話功能。
+這是一個自動化的 LINE Bot **獨立專案**，用於每天定時發送 AI 生成的早安圖片和問候訊息，並支援與 Gemini AI 的對話功能。本專案不屬於LINE SDK的一部分，而是一個完全獨立的應用程序。
 
 ## 功能特點
 
