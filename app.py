@@ -1,33 +1,36 @@
 #!/usr/bin/env python3
 """
-主要入口點 - 直接啟動LINE Webhook服務
+緊急修復版 - LINE Bot Webhook 服務
+用於解決 Render 部署問題
+直接整合所有功能於單一文件
 """
 
 import os
 import sys
 import logging
+from flask import Flask, request, abort, jsonify
+from linebot.v3 import WebhookHandler
+from linebot.v3.exceptions import InvalidSignatureError
+from linebot.v3.messaging import (
+    Configuration, ApiClient, MessagingApi, ReplyMessageRequest, TextMessage
+)
+from linebot.v3.webhooks import MessageEvent, TextMessageContent
 
 print("="*80)
-print("啟動 LINE Bot Webhook 服務 - 2025年6月5日更新版")
-print("包含AI對話功能和對話記憶功能")
+print("啟動 LINE Bot Webhook 緊急修復服務 - 2025年6月5日")
+print("整合版 - 直接從app.py啟動，避免LINE SDK衝突")
 print("="*80)
 
-# 設定日誌
+# 初始化Flask應用
+app = Flask(__name__)
+
+# 配置日誌
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler()
-    ]
+    handlers=[logging.StreamHandler()]
 )
 logger = logging.getLogger(__name__)
-
-logger.info("正在從/src目錄導入LINE Webhook模組")
-
-# 添加路徑
-current_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(current_dir)
-sys.path.append(os.path.join(current_dir, 'src'))
 
 # 載入環境變數
 try:
@@ -37,23 +40,132 @@ try:
 except Exception as e:
     logger.error(f"載入環境變數時發生錯誤: {str(e)}")
 
-# 導入LINE Webhook應用
-try:
-    from src.line_webhook import app
-    logger.info("成功導入LINE Webhook應用")
-except ImportError:
+# 環境變數
+LINE_CHANNEL_ACCESS_TOKEN = os.getenv('LINE_CHANNEL_ACCESS_TOKEN')
+LINE_CHANNEL_SECRET = os.getenv('LINE_CHANNEL_SECRET')
+
+if not LINE_CHANNEL_ACCESS_TOKEN or not LINE_CHANNEL_SECRET:
+    logger.error("缺少LINE API憑證")
+    logger.error("請設置環境變數: LINE_CHANNEL_ACCESS_TOKEN和LINE_CHANNEL_SECRET")
+    # 安全檢查 - 使用預設值以便測試
+    if not os.getenv('RENDER', ''):  # 只在Render環境繼續執行
+        LINE_CHANNEL_SECRET = "DUMMY_SECRET"
+        LINE_CHANNEL_ACCESS_TOKEN = "DUMMY_TOKEN"
+        logger.warning("使用虛擬憑證繼續執行 (僅供開發環境)")
+
+# LINE Bot API設置
+configuration = Configuration(access_token=LINE_CHANNEL_ACCESS_TOKEN)
+handler = WebhookHandler(LINE_CHANNEL_SECRET or "dummy_secret_for_initialization")
+
+@app.route("/", methods=['GET'])
+def home():
+    """首頁"""
+    return """
+    <html>
+    <head><title>緊急修復版LINE Bot</title></head>
+    <body>
+        <h1>LINE Bot Webhook服務 - 緊急修復版</h1>
+        <p>日期: 2025年6月5日</p>
+        <p>這是一個緊急修復版LINE Bot，用於解決與LINE SDK範例的衝突問題。</p>
+        <p>狀態: 運行中</p>
+        <hr>
+        <h2>鉛一：測試用LINE Bot</h2>
+    </body>
+    </html>
+    """
+
+@app.route("/health", methods=['GET'])
+def health():
+    """健康檢查"""
+    status = "ok" if LINE_CHANNEL_ACCESS_TOKEN and LINE_CHANNEL_SECRET else "warning"
+    message = "LINE Bot Webhook service is running (Emergency Fix Version)"
+    if status == "warning":
+        message += " - MISSING CREDENTIALS"
+    
+    return jsonify({
+        "status": status,
+        "message": message,
+        "timestamp": str(os.popen('date').read().strip()),
+        "environment": {
+            "LINE_CHANNEL_ACCESS_TOKEN": "configured" if LINE_CHANNEL_ACCESS_TOKEN else "missing",
+            "LINE_CHANNEL_SECRET": "configured" if LINE_CHANNEL_SECRET else "missing"
+        }
+    })
+
+def is_ai_request(message):
+    """檢查是否為AI請求"""
+    if not message:
+        return False
+    
+    message_lower = message.lower().strip()
+    return (message_lower.startswith(('ai:', 'ai：')) or 
+            message_lower.startswith(('@ai', '@ai ')) or
+            message_lower.startswith('ai ') or
+            message_lower == 'ai')
+
+@app.route("/callback", methods=['POST'])
+def callback():
+    """處理LINE Webhook回調"""
+    logger.info("收到webhook回調")
+    
+    # 獲取X-Line-Signature標頭值
+    signature = request.headers.get('X-Line-Signature')
+    if not signature:
+        logger.error("缺少簽名")
+        abort(400)
+    
+    # 獲取請求體
+    body = request.get_data(as_text=True)
+    logger.info("請求體: %s", body)
+    
+    # 處理webhook請求體
     try:
-        from line_webhook import app
-        logger.info("從根目錄成功導入LINE Webhook應用")
-    except ImportError as e:
-        logger.critical(f"無法導入LINE Webhook應用: {str(e)}")
-        logger.critical("檢查當前目錄內容:")
-        import os
-        logger.critical(str(os.listdir('.')))
-        if os.path.exists('src'):
-            logger.critical("src目錄內容:")
-            logger.critical(str(os.listdir('src')))
-        raise
+        handler.handle(body, signature)
+    except InvalidSignatureError:
+        logger.error("無效的簽名")
+        abort(400)
+    except Exception as e:
+        logger.error("處理webhook時出錯: %s", e)
+    
+    return 'OK'
+
+@handler.add(MessageEvent, message=TextMessageContent)
+def handle_message(event):
+    """處理文字訊息"""
+    logger.info("收到訊息事件: %s", event)
+    
+    user_id = event.source.user_id
+    user_message = event.message.text
+    reply_token = event.reply_token
+    
+    logger.info("用戶 %s 發送訊息: %s", user_id, user_message)
+    
+    # 檢查是否為AI請求
+    if is_ai_request(user_message):
+        logger.info("檢測到AI請求")
+        try:
+            # 回覆訊息
+            with ApiClient(configuration) as api_client:
+                line_bot_api = MessagingApi(api_client)
+                
+                # 處理AI請求
+                ai_response = "我收到了你的AI請求：「{}」\n這是緊急修復版LINE Bot的回應".format(
+                    user_message.replace("AI:", "").replace("ai:", "").strip()
+                )
+                
+                # 發送回覆
+                line_bot_api.reply_message(
+                    ReplyMessageRequest(
+                        reply_token=reply_token,
+                        messages=[TextMessage(text=ai_response)]
+                    )
+                )
+                logger.info("已回覆AI請求")
+            
+        except Exception as e:
+            logger.error("回覆訊息時出錯: %s", e)
+    else:
+        logger.info("非AI請求，不處理")
 
 # 讓gunicorn能夠找到應用
 application = app

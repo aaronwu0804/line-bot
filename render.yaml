@@ -3,12 +3,14 @@ services:
   - type: web
     name: line-bot-webhook
     runtime: python
-    buildCommand: ./scripts/render_build.sh
-    startCommand: ./scripts/render_start.sh
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
     plan: free
     envVars:
       - key: PORT
         value: 8080
+      - key: RENDER
+        value: "true"
       - key: RENDER_SERVICE_URL
         sync: false  # 手動設定
       - key: LINE_CHANNEL_ACCESS_TOKEN
