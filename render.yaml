@@ -1,0 +1,25 @@
+version: "2"
+services:
+  - type: web
+    name: line-bot-webhook
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn render_app:app
+    plan: free
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: RENDER_SERVICE_URL
+        sync: false  # 手動設定
+      - key: LINE_CHANNEL_ACCESS_TOKEN
+        sync: false  # 手動設定
+      - key: LINE_CHANNEL_SECRET
+        sync: false  # 手動設定
+      - key: LINE_USER_ID
+        sync: false  # 手動設定
+      - key: CWB_API_KEY
+        sync: false  # 手動設定
+      - key: GEMINI_API_KEY
+        sync: false  # 手動設定
+    autoDeploy: true
+    healthCheckPath: /health

@@ -1,0 +1,33 @@
+{
+  "name": "Morning Post LINE Bot",
+  "description": "早安貼文與 Gemini AI 對話功能的 LINE Bot",
+  "keywords": ["line", "bot", "weather", "ai", "gemini", "morning-post"],
+  "repository": "https://github.com/yourusername/morning-post",
+  "env": {
+    "LINE_CHANNEL_ACCESS_TOKEN": {
+      "description": "LINE Bot 的 Channel Access Token",
+      "required": true
+    },
+    "LINE_CHANNEL_SECRET": {
+      "description": "LINE Bot 的 Channel Secret",
+      "required": true
+    },
+    "LINE_USER_ID": {
+      "description": "接收訊息的 LINE User ID",
+      "required": true
+    },
+    "CWB_API_KEY": {
+      "description": "中央氣象局 API 金鑰",
+      "required": true
+    },
+    "GEMINI_API_KEY": {
+      "description": "Google Gemini API 金鑰",
+      "required": true
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+version: "3"
+
+services:
+  jimeng-free-api:
+    container_name: jimeng-free-api
+    image: vinlic/jimeng-free-api:latest
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - TZ=Asia/Shanghai
+  
+  morning-post-bot:
+    container_name: morning-post-bot
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    volumes:
+      - ./:/app
+      - ./logs:/app/logs
+    environment:
+      - TZ=Asia/Taipei
+    command: python start_bot.py
+    depends_on:
+      - morning-post-webhook
+  
+  morning-post-webhook:
+    container_name: morning-post-webhook
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./:/app
+      - ./logs:/app/logs
+    environment:
+      - TZ=Asia/Taipei
+      - PORT=5000
+    command: python start_webhook.py

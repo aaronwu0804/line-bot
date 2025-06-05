@@ -1,0 +1,61 @@
+# 環境變數檔案
+.env
+
+# Python暫存檔案
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 日誌檔案
+*.log
+logs/
+
+# 虛擬環境
+venv/
+ENV/
+env/
+
+# 快取檔案
+.DS_Store
+.cache/
+*.swp
+*.swo
+
+# 本地測試檔案
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE 檔案
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.project
+.pydevproject
+.settings/
+.classpath
+.c9/
+*.launch
+*.sublime-workspace
+
+# 臨時圖片檔案
+/images/temp/
