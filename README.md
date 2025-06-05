@@ -1,4 +1,4 @@
-# Morning Post Bot - 獨立LINE Bot專案
+# 早安貼文機器人 (Morning Post Bot) - 獨立LINE Bot專案
 
 這是一個自動化的 LINE Bot **獨立專案**，用於每天定時發送 AI 生成的早安圖片和問候訊息，並支援與 Gemini AI 的對話功能。本專案不屬於LINE SDK的一部分，而是一個完全獨立的應用程序。
 
@@ -110,3 +110,7 @@ docker-compose up -d
 1. 在 `generate_greeting_message()` 函數中可以自訂早安問候語的格式和內容
 2. 可以修改 `line_webhook.py` 中的 `is_ai_request()` 函數來自訂觸發 AI 對話的關鍵字
 3. 調整 `MAX_HISTORY` 變數來控制對話歷史記錄的長度
+
+## 特別說明：避免 LINE SDK 衝突
+
+本專案是一個完全獨立的應用程序，不依賴於 LINE SDK 的原始倉庫。在部署到 Render 時，我們使用的是獨立的、自維護的程式碼，這樣可以避免與 LINE SDK 示例代碼產生混淆或衝突。
