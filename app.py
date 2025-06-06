@@ -64,6 +64,20 @@ RENDER_SERVICE_URL = os.getenv('RENDER_SERVICE_URL')
 # 獲取Gemini API金鑰 - 注意兩種可能的環境變數名稱
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY') or os.getenv('GEMINI_KEY')
 
+# 對話歷史紀錄儲存
+# 使用使用者ID作為鍵，儲存該使用者的對話歷史
+conversation_histories = {}
+
+# 對話狀態追蹤
+# 使用使用者ID作為鍵，紀錄用戶是否正在進行連續對話及最後互動時間
+active_conversations = {}
+
+# 連續對話超時時間（秒）
+CONVERSATION_TIMEOUT = 300  # 5分鐘無互動後結束對話
+
+# 對話歷史記錄上限
+MAX_HISTORY = 10  # 保留最近10輪對話
+
 # 檢查並載入Gemini API
 if GEMINI_API_KEY:
     try:
@@ -267,6 +281,20 @@ def health():
         "cache": cache_info
     })
 
+# 對話歷史紀錄儲存
+# 使用使用者ID作為鍵，儲存該使用者的對話歷史
+conversation_histories = {}
+
+# 對話狀態追蹤
+# 使用使用者ID作為鍵，紀錄用戶是否正在進行連續對話及最後互動時間
+active_conversations = {}
+
+# 連續對話超時時間（秒）
+CONVERSATION_TIMEOUT = 300  # 5分鐘無互動後結束對話
+
+# 對話歷史記錄上限
+MAX_HISTORY = 10  # 保留最近10輪對話
+
 # 預先定義的回應模板
 weather_response = """
 根據我的了解，今天是{current_date}，但我無法實時查詢天氣資訊。
@@ -314,10 +342,9 @@ help_response = """
 🌟 AI小幫手花生祝您使用愉快！
 """
 
-def get_ai_response(message):
-    """獲取AI回應"""
-    # 提取用戶問題 (移除AI前綴)
-    user_question = message
+def extract_query(message):
+    """從訊息中提取實際查詢內容"""
+    user_question = message.strip()
     
     # 處理明確的前綴
     for prefix in ['ai:', 'ai：', '@ai ', '@ai', 'ai ']:
@@ -333,18 +360,54 @@ def get_ai_response(message):
         if user_question.startswith(keyword):
             user_question = user_question[len(keyword):]
             break
-        
-        # 尋找「小幫手」或「花生」在句子中的位置
-        index = user_question.find(keyword)
-        if index != -1:
-            # 提取關鍵字後的部分
-            query = user_question[index + len(keyword):].strip()
-            # 如果提取的內容非空，則使用它
-            if query:
-                user_question = query
-                break
     
-    user_question = user_question.strip()
+    # 處理允許的前導字符
+    allowed_prefixes = ['!', '！', ',', '，', '。', '.', '?', '？', ' ', '　', ':', '：', '@', '#', '$', '%', '、', '~', '～']
+    keywords = ['小幫手', '花生']
+    
+    for keyword in keywords:
+        # 如果關鍵字在開頭，移除它
+        if message.startswith(keyword):
+            return message[len(keyword):].strip()
+        
+        # 處理有前導字符的情況
+        if len(message) > 1:
+            first_char = message[0]
+            # 單個前導字符
+            if first_char in allowed_prefixes and message[1:].startswith(keyword):
+                return message[1 + len(keyword):].strip()
+            
+            # 前導字符+空格的情況 (如 ". 小幫手")
+            if len(message) > 2 and first_char in allowed_prefixes and message[1] == ' ':
+                if message[2:].startswith(keyword):
+                    return message[2 + len(keyword):].strip()
+    
+    # 處理「花生」字符級別檢測
+    flower_char = '花'
+    life_char = '生'
+    
+    # 直接在句首的「花生」
+    if message.startswith(flower_char) and len(message) > 1:
+        if message[1] == life_char:
+            return message[2:].strip()
+    
+    # 允許的前導字符後的「花生」
+    if len(message) > 2 and message[0] in allowed_prefixes:
+        # 一個前導字符的情況
+        if message[1] == flower_char and message[2] == life_char:
+            return message[3:].strip()
+        
+        # 前導字符+空格的情況
+        elif message[1] == ' ' and len(message) > 3:
+            if message[2] == flower_char and message[3] == life_char:
+                return message[4:].strip()
+    
+    return user_question.strip()
+
+def get_ai_response(message, conversation_history=None):
+    """獲取AI回應"""
+    # 提取用戶問題
+    user_question = message
     
     # 嘗試從緩存中獲取回應
     if CACHE_ENABLED:
@@ -708,33 +771,6 @@ def is_ai_request(message):
     # 如果經過所有檢查都不符合條件
     logger.info("非AI請求: 未檢測到任何觸發關鍵字")
     return False
-    
-    # 添加日誌以查看接收到的確切訊息
-    logger.info(f"檢測訊息是否為AI請求: '{message}'")
-    
-    message_lower = message.lower().strip()
-    # 檢查常見的AI前綴
-    if (message_lower.startswith(('ai:', 'ai：')) or 
-        message_lower.startswith(('@ai', '@ai ')) or
-        message_lower.startswith('ai ') or 
-        message_lower == 'ai'):
-        logger.info("識別為AI請求: 前綴匹配")
-        return True
-        
-    # 檢查其他觸發關鍵字 (加強檢測)
-    if '小幫手' in message:
-        logger.info("識別為AI請求: 檢測到'小幫手'關鍵字")
-        return True
-    if '花生' in message:
-        logger.info("識別為AI請求: 檢測到'花生'關鍵字")
-        return True
-    
-    # 手動打印字符的ASCII碼，以檢查是否有特殊字符
-    logger.info(f"訊息字符ASCII碼: {[ord(c) for c in message[:20]]}")
-    
-    # 如果經過所有檢查都不符合條件
-    logger.info("非AI請求: 未檢測到任何觸發關鍵字")
-    return False
 
 @app.route("/callback", methods=['POST'])
 def callback():
@@ -773,15 +809,48 @@ def handle_message(event):
     
     logger.info("用戶 %s 發送訊息: %s", user_id, user_message)
     
-    # 檢查是否為AI請求
-    if is_ai_request(user_message):
-        logger.info("檢測到AI請求，正在處理...")
+    # 檢查用戶是否處於活躍對話狀態
+    current_time = time.time()
+    is_active_conversation = check_active_conversation(user_id, current_time)
+    
+    # 檢查是否要結束對話
+    if user_message.lower().strip() in ['結束', '結束對話', '停止', '停止對話', 'exit', 'quit', 'stop']:
+        if is_active_conversation:
+            # 結束對話
+            end_conversation(user_id)
+            with ApiClient(configuration) as api_client:
+                line_bot_api = MessagingApi(api_client)
+                line_bot_api.reply_message(
+                    ReplyMessageRequest(
+                        reply_token=reply_token,
+                        messages=[TextMessage(text="好的，已結束本次對話。有需要時請隨時呼喚我！")]
+                    )
+                )
+            return
+    
+    # 檢查訊息是否為 AI 對話請求 (活躍對話或匹配關鍵詞)
+    if is_active_conversation or is_ai_request(user_message):
+        # 如果是新的對話或匹配了關鍵詞，將用戶設為活躍對話狀態
+        start_conversation(user_id)
+        logger.info("檢測到AI請求或活躍對話，正在處理...")
         try:
+            # 取出真實查詢內容（去除前綴）
+            query = user_message
+            if is_ai_request(user_message):
+                # 如果是關鍵字觸發，需要提取查詢內容
+                query = extract_query(user_message)
+            
+            # 獲取或初始化對話歷史
+            conversation_history = conversation_histories.get(user_id, [])
+            
             # 獲取AI回應
             start_time = time.time()
-            ai_response = get_ai_response(user_message)
+            ai_response = get_ai_response(query)
             process_time = time.time() - start_time
             logger.info(f"生成AI回應完成，耗時 {process_time:.2f} 秒")
+            
+            # 更新對話歷史
+            update_conversation_history(user_id, query, ai_response)
             
             # 檢查回應是否為空
             if not ai_response:
@@ -820,6 +889,52 @@ def handle_message(event):
 
 # 讓gunicorn能夠找到應用
 application = app
+
+# 對話狀態管理相關的函數
+def check_active_conversation(user_id, current_time):
+    """檢查用戶是否處於活躍對話狀態"""
+    if user_id in active_conversations:
+        last_activity_time = active_conversations[user_id]
+        # 檢查是否超時
+        if current_time - last_activity_time <= CONVERSATION_TIMEOUT:
+            return True
+        else:
+            # 超時自動結束對話
+            end_conversation(user_id)
+            return False
+    return False
+
+def start_conversation(user_id):
+    """將用戶標記為活躍對話狀態"""
+    active_conversations[user_id] = time.time()
+    logger.info(f"用戶 {user_id} 開始/繼續對話")
+
+def end_conversation(user_id):
+    """結束用戶的對話狀態"""
+    if user_id in active_conversations:
+        del active_conversations[user_id]
+        logger.info(f"用戶 {user_id} 結束對話")
+    # 可選：根據需求決定是否要清除對話歷史
+    # if user_id in conversation_histories:
+    #     del conversation_histories[user_id]
+
+def update_conversation_history(user_id, query, response):
+    """更新使用者的對話歷史記錄"""
+    # MAX_HISTORY 已在全域定義
+    
+    if user_id not in conversation_histories:
+        conversation_histories[user_id] = []
+    
+    # 添加新的對話
+    conversation_histories[user_id].append({"role": "user", "parts": [query]})
+    conversation_histories[user_id].append({"role": "model", "parts": [response]})
+    
+    # 如果歷史紀錄太長，移除最舊的對話
+    if len(conversation_histories[user_id]) > MAX_HISTORY * 2:  # 一輪對話有兩條紀錄
+        conversation_histories[user_id] = conversation_histories[user_id][-MAX_HISTORY*2:]
+        
+    # 更新對話狀態 (設定最新活動時間)
+    start_conversation(user_id)
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 8080))
