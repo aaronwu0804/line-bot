@@ -297,27 +297,53 @@ self_intro_response = """
 """
 
 help_response = """
-👋 您好！我可以提供以下幫助：
+👋 歡迎使用智能早安助理！
 
-1️⃣ 回答知識性問題
-2️⃣ 提供簡單資訊查詢
-3️⃣ 協助進行文字處理或翻譯
-4️⃣ 進行友好的對話交流
+📅 我會在每個工作日早上 7:00 和週末早上 8:00 自動發送早安問候和天氣預報。
 
-使用方式：請在訊息前加上「AI:」或「@AI」前綴，例如：
-「AI: 請介紹台灣的夜市文化」
+💬 我還可以幫您回答各種問題！使用方式如下：
+- 輸入「AI: 您的問題」(例如：AI: 推薦幾本好書)
+- 或輸入「@AI 您的問題」(例如：@AI 今天的天氣如何？)
+- 或喊「小幫手」(例如：小幫手，介紹台灣夜市文化)
+- 或喊「花生」(例如：花生，幫我查一下這個字怎麼念)
 
-希望能為您提供有用的幫助！
+🔄 我具備上下文理解功能，一旦開始對話後，您可以直接提問，無需再加上前綴！
+
+⏱️ 對話將在5分鐘無互動後自動結束，或您可以輸入「結束對話」來主動結束
+
+🌟 AI小幫手花生祝您使用愉快！
 """
 
 def get_ai_response(message):
     """獲取AI回應"""
     # 提取用戶問題 (移除AI前綴)
     user_question = message
+    
+    # 處理明確的前綴
     for prefix in ['ai:', 'ai：', '@ai ', '@ai', 'ai ']:
         if user_question.lower().startswith(prefix):
             user_question = user_question[len(prefix):]
             break
+    
+    # 處理「小幫手」和「花生」關鍵字
+    keywords = ['小幫手', '花生', 'AI', 'ai']
+    
+    for keyword in keywords:
+        # 如果關鍵字在開頭，移除它
+        if user_question.startswith(keyword):
+            user_question = user_question[len(keyword):]
+            break
+        
+        # 尋找「小幫手」或「花生」在句子中的位置
+        index = user_question.find(keyword)
+        if index != -1:
+            # 提取關鍵字後的部分
+            query = user_question[index + len(keyword):].strip()
+            # 如果提取的內容非空，則使用它
+            if query:
+                user_question = query
+                break
+    
     user_question = user_question.strip()
     
     # 嘗試從緩存中獲取回應
@@ -590,15 +616,125 @@ def get_ai_response(message):
 感謝您的理解！"""
 
 def is_ai_request(message):
-    """檢查是否為AI請求"""
+    """檢查是否為AI請求 (最終版: 僅檢測訊息開頭或帶允許前導字符的關鍵字)"""
     if not message:
         return False
     
+    # 添加日誌以查看接收到的確切訊息
+    logger.info(f"檢測訊息是否為AI請求: '{message}'")
+    
+    # 嘗試處理可能的特殊字符或編碼問題
+    normalized_message = message
+    try:
+        # 先嘗試規範化字符
+        import unicodedata
+        normalized_message = unicodedata.normalize('NFKC', message)
+        if normalized_message != message:
+            logger.info(f"已規範化訊息: '{normalized_message}'")
+    except Exception as e:
+        logger.error(f"規範化訊息時出錯: {str(e)}")
+    
+    # 去除前後空格，便於檢查句首關鍵字
+    trimmed_message = normalized_message.strip()
+    message_lower = trimmed_message.lower()
+    
+    # 1. 檢查常見的AI前綴 (必須在句首)
+    if (message_lower.startswith(('ai:', 'ai：')) or 
+        message_lower.startswith(('@ai', '@ai ')) or
+        message_lower.startswith('ai ') or 
+        message_lower == 'ai'):
+        logger.info("識別為AI請求: 前綴匹配")
+        return True
+    
+    # 2. 檢查中文關鍵字是否在句首或帶有允許的前導字符
+    keywords = ['小幫手', '花生']
+    
+    # 允許的前導字符列表
+    allowed_prefixes = ['!', '！', ',', '，', '。', '.', '?', '？', ' ', '　', ':', '：', '@', '#', '$', '%', '、', '~', '～']
+    
+    for keyword in keywords:
+        # 檢查關鍵字是否在句首
+        if trimmed_message.startswith(keyword):
+            logger.info(f"識別為AI請求: 檢測到句首關鍵字 '{keyword}'")
+            return True
+        
+        # 檢查是否有允許的前導字符後接關鍵字
+        if len(trimmed_message) > 1:
+            # 處理只有一個前導字符的情況
+            first_char = trimmed_message[0]
+            if first_char in allowed_prefixes and trimmed_message[1:].startswith(keyword):
+                logger.info(f"識別為AI請求: 檢測到帶前導字符的關鍵字 '{keyword}', 前導字符: '{first_char}'")
+                return True
+            
+            # 處理有前導字符和空格的情況 (如 ". 小幫手")
+            if len(trimmed_message) > 2 and first_char in allowed_prefixes:
+                # 特殊處理點號+空格情況
+                if first_char == '.' and trimmed_message[1] == ' ' and trimmed_message[2:].startswith(keyword):
+                    logger.info(f"識別為AI請求: 檢測到特殊點號和空格前導的關鍵字 '{keyword}'")
+                    return True
+                
+                # 正常處理其他前導字符+空格情況
+                if trimmed_message[1] == ' ' and trimmed_message[2:].startswith(keyword):
+                    logger.info(f"識別為AI請求: 檢測到帶前導字符和空格的關鍵字 '{keyword}', 前導字符: '{first_char} '")
+                    return True
+    
+    # 3. 特殊處理「花生」(字符級別)
+    flower_char = '花'
+    life_char = '生'
+    
+    # 直接在句首的「花生」
+    if trimmed_message.startswith(flower_char) and len(trimmed_message) > 1:
+        if trimmed_message[1] == life_char:
+            logger.info(f"識別為AI請求: 通過字符級別檢測到句首 '花生' 關鍵字")
+            return True
+    
+    # 允許的前導字符後的「花生」
+    if len(trimmed_message) > 2 and trimmed_message[0] in allowed_prefixes:
+        # 一個前導字符的情況
+        if trimmed_message[1] == flower_char and trimmed_message[2] == life_char:
+            logger.info(f"識別為AI請求: 通過字符級別檢測到帶前導字符的 '花生' 關鍵字")
+            return True
+            
+        # 前導字符+空格的情況 (如 ". 花生")
+        elif trimmed_message[1] == ' ' and len(trimmed_message) > 3:
+            if trimmed_message[2] == flower_char and trimmed_message[3] == life_char:
+                logger.info(f"識別為AI請求: 通過字符級別檢測到帶前導字符和空格的 '花生' 關鍵字")
+                return True
+    
+    # 所有檢查都未通過
+    logger.info("非AI請求: 未檢測到句首或帶允許前導字符的觸發關鍵字")
+    return False
+    
+    # 如果經過所有檢查都不符合條件
+    logger.info("非AI請求: 未檢測到任何觸發關鍵字")
+    return False
+    
+    # 添加日誌以查看接收到的確切訊息
+    logger.info(f"檢測訊息是否為AI請求: '{message}'")
+    
     message_lower = message.lower().strip()
-    return (message_lower.startswith(('ai:', 'ai：')) or 
-            message_lower.startswith(('@ai', '@ai ')) or
-            message_lower.startswith('ai ') or
-            message_lower == 'ai')
+    # 檢查常見的AI前綴
+    if (message_lower.startswith(('ai:', 'ai：')) or 
+        message_lower.startswith(('@ai', '@ai ')) or
+        message_lower.startswith('ai ') or 
+        message_lower == 'ai'):
+        logger.info("識別為AI請求: 前綴匹配")
+        return True
+        
+    # 檢查其他觸發關鍵字 (加強檢測)
+    if '小幫手' in message:
+        logger.info("識別為AI請求: 檢測到'小幫手'關鍵字")
+        return True
+    if '花生' in message:
+        logger.info("識別為AI請求: 檢測到'花生'關鍵字")
+        return True
+    
+    # 手動打印字符的ASCII碼，以檢查是否有特殊字符
+    logger.info(f"訊息字符ASCII碼: {[ord(c) for c in message[:20]]}")
+    
+    # 如果經過所有檢查都不符合條件
+    logger.info("非AI請求: 未檢測到任何觸發關鍵字")
+    return False
 
 @app.route("/callback", methods=['POST'])
 def callback():
