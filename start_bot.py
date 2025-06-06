@@ -82,7 +82,15 @@ def run_diagnostics():
 
 def start_bot(test_only=False):
     """啟動機器人"""
-    logger.info(f"===== 啟動早安貼文機器人 ({datetime.now()}) =====")
+    logger.info(f"===== 啟動早安貼文機器人 v2.1.0 ({datetime.now()}) =====")
+    logger.info("已整合 Gemini AI 智能問候功能！")
+    
+    # 檢查環境變數
+    gemini_key = os.getenv('GEMINI_API_KEY') or os.getenv('GEMINI_KEY')
+    if gemini_key:
+        logger.info("已檢測到 Gemini API 密鑰，將啟用智能問候功能")
+    else:
+        logger.info("未設定 Gemini API 密鑰，將使用預設問候語")
     
     if test_only:
         logger.info("僅執行測試模式...")

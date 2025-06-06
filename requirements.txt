@@ -13,3 +13,6 @@ flask==2.3.3
 gunicorn==21.2.0
 whitenoise==6.6.0
 python-firebase==1.2
+# 新增依賴 - 配額管理和優化需求
+tenacity==8.2.3
+pathlib==1.0.1

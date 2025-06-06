@@ -11,6 +11,9 @@
 - 支援圖片本地儲存
 - **全新：** 支援 Gemini AI 對話功能，在 LINE 聊天室直接與 AI 對話
 - **全新：** 對話上下文記憶功能，支援連續對話
+- **全新 v2.1.0：** 智能緩存系統，減少重複 API 調用
+- **全新 v2.1.0：** 增強型錯誤處理，自動處理配額限制問題
+- **全新 v2.1.0：** 智能模型選擇，優先使用輕量級模型以節省配額
 
 ## 安裝步驟
 
@@ -57,6 +60,16 @@ python start_webhook.py
 測試 Gemini API 連接：
 ```bash
 python start_webhook.py --test-api
+```
+
+監控 API 使用情況：
+```bash
+python src/api_usage_monitor.py --test
+```
+
+分析 API 使用統計：
+```bash
+python src/api_usage_monitor.py --analyze
 ```
 
 ### 使用 AI 對話功能
@@ -108,8 +121,20 @@ docker-compose up -d
 ## 自訂設定
 
 1. 在 `generate_greeting_message()` 函數中可以自訂早安問候語的格式和內容
-2. 可以修改 `line_webhook.py` 中的 `is_ai_request()` 函數來自訂觸發 AI 對話的關鍵字
-3. 調整 `MAX_HISTORY` 變數來控制對話歷史記錄的長度
+2. 可以修改 `app.py` 中的 `is_ai_request()` 函數來自訂觸發 AI 對話的關鍵字
+3. 在 `src/response_cache.py` 中可調整緩存的有效期和設定
+4. 在 `app.py` 中可調整 Gemini API 的重試策略和模型選擇邏輯
+
+## 配額限制管理
+
+Gemini API 在免費方案下有配額限制，本專案已實現以下機制來處理這一問題：
+
+1. **智能緩存系統**：相同問題自動使用緩存回應
+2. **指數退避策略**：遇到配額限制自動延遲重試
+3. **模型回退機制**：優先使用輕量模型，遇到問題時自動嘗試其他模型
+4. **參數優化**：根據重試次數動態調整參數降低令牌消耗
+
+詳細資訊請參閱 [API 配額管理指南](./docs/API_QUOTA_MANAGEMENT.md)
 
 ## 特別說明：避免 LINE SDK 衝突
 

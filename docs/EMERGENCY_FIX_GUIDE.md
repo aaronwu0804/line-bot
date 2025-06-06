@@ -64,14 +64,40 @@ python src/line_webhook_test.py --url https://line-bot-webhook.onrender.com/call
 3. **邊緣案例處理**: 添加了更多日誌輸出和錯誤處理
 4. **健康檢查API**: 提供了詳細的健康檢查信息
 
+## 部署超時問題修復
+
+我們還遇到了Render部署超時的問題，日誌顯示：
+
+```
+==> Deploying...
+==> Timed Out
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
+```
+
+為解決此問題，我們實施了以下優化：
+
+1. **優化gunicorn設定**：在render.yaml中調整了啟動命令，增加超時時間並優化工作進程配置：
+   ```yaml
+   startCommand: gunicorn app:app --timeout 120 --workers 1 --threads 2
+   ```
+
+2. **實施自我保活機制**：在應用程序內部增加了一個線程，定期訪問健康檢查端點，防止服務進入休眠狀態。
+
+3. **外部保活腳本**：提供了`render_keep_alive_ext.py`腳本，可在外部服務器上運行，定期向Render服務發送請求，保持服務活躍。
+
+4. **優化應用啟動速度**：簡化了應用程序啟動流程，移除不必要的初始化操作。
+
+5. **調整Render環境適配**：針對Render進行了特殊優化，以便更好地在其環境中運行。
+
 ## 長期解決方案
 
 緊急修復後，我們將實施以下長期解決方案：
 
-1. 創建獨立的Git倉庫，而不依賴於LINE SDK的倉庫
+1. 創建獨立的Git倉庫，而不依賴於LINE SDK的倉庫（已完成）
 2. 重構應用程序結構，確保清晰的模組化設計
 3. 實施CI/CD流程，自動化測試和部署
 4. 實現多環境配置和日誌記錄系統
+5. 考慮升級到Render付費計劃，或遷移到其他更穩定的雲平台
 
 ## 聯繫人
 

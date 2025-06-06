@@ -89,55 +89,167 @@ class ResponseCache:
             logger.error(f"讀取緩存失敗: {str(e)}")
             return None
             
-    def set(self, prompt, response):
+    def set(self, prompt, response, ttl=None):
         """
         將回應保存到緩存
         
         參數:
             prompt: 提示文本
             response: 回應文本
+            ttl: 緩存有效期（秒），如不指定則使用默認值
             
         返回:
             是否成功保存
         """
-        if not response:
-            return False
-            
-        cache_key = self._get_cache_key(prompt)
-        cache_file = self._get_cache_file(cache_key)
-        
         try:
+            cache_key = self._get_cache_key(prompt)
+            cache_file = self._get_cache_file(cache_key)
+            
+            # 準備緩存數據
+            cache_data = {
+                'prompt': prompt,
+                'response': response,
+                'timestamp': datetime.now().isoformat(),
+                'ttl': ttl or self.cache_ttl
+            }
+            
             # 保存緩存
             with cache_file.open('w', encoding='utf-8') as f:
-                cache_data = {
-                    'prompt': prompt,
-                    'response': response,
-                    'timestamp': datetime.now().isoformat()
-                }
                 json.dump(cache_data, f, ensure_ascii=False, indent=2)
                 
-            logger.info(f"回應已保存至緩存: {cache_key}")
+            logger.info(f"回應已保存到緩存: {cache_key}")
             return True
-            
         except Exception as e:
             logger.error(f"保存緩存失敗: {str(e)}")
             return False
             
+    def delete(self, prompt):
+        """
+        從緩存中刪除特定回應
+        
+        參數:
+            prompt: 提示文本
+        
+        返回:
+            是否成功刪除
+        """
+        try:
+            cache_key = self._get_cache_key(prompt)
+            cache_file = self._get_cache_file(cache_key)
+            
+            if cache_file.exists():
+                cache_file.unlink()
+                logger.info(f"從緩存中刪除: {cache_key}")
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"刪除緩存失敗: {str(e)}")
+            return False
+            
     def clear_expired(self):
-        """清除過期的緩存"""
+        """清理過期緩存"""
         try:
             count = 0
             now = time.time()
             
             for cache_file in self.cache_dir.glob('*.json'):
-                if cache_file.stat().st_mtime < now - self.cache_ttl:
+                # 檢查文件是否有特殊 TTL
+                cache_ttl = self.cache_ttl
+                try:
+                    with cache_file.open('r', encoding='utf-8') as f:
+                        cache_data = json.load(f)
+                        if 'ttl' in cache_data and isinstance(cache_data['ttl'], (int, float)):
+                            cache_ttl = cache_data['ttl']
+                except:
+                    pass  # 如果無法讀取，使用默認 TTL
+
+                # 檢查是否過期
+                if cache_file.stat().st_mtime < now - cache_ttl:
                     cache_file.unlink()
                     count += 1
                     
-            logger.info(f"已清除 {count} 個過期緩存")
-            
+            if count > 0:
+                logger.info(f"已清理 {count} 個過期緩存")
+                
+            return count
         except Exception as e:
-            logger.error(f"清除過期緩存失敗: {str(e)}")
+            logger.error(f"清理緩存時發生錯誤: {str(e)}")
+            return 0
+            
+    def get_stats(self):
+        """
+        獲取緩存統計資訊
+        
+        返回:
+            dict: 緩存統計資訊
+        """
+        try:
+            stats = {
+                "total_files": 0,
+                "total_size_bytes": 0,
+                "newest_file": None,
+                "oldest_file": None,
+                "avg_size_bytes": 0
+            }
+            
+            cache_files = list(self.cache_dir.glob('*.json'))
+            stats["total_files"] = len(cache_files)
+            
+            if not cache_files:
+                return stats
+                
+            # 計算總大小
+            total_size = 0
+            newest_time = 0
+            oldest_time = float('inf')
+            newest_file = None
+            oldest_file = None
+            
+            for cache_file in cache_files:
+                file_size = cache_file.stat().st_size
+                total_size += file_size
+                
+                mtime = cache_file.stat().st_mtime
+                if mtime > newest_time:
+                    newest_time = mtime
+                    newest_file = cache_file.name
+                    
+                if mtime < oldest_time:
+                    oldest_time = mtime
+                    oldest_file = cache_file.name
+            
+            stats["total_size_bytes"] = total_size
+            if stats["total_files"] > 0:
+                stats["avg_size_bytes"] = total_size / stats["total_files"]
+                
+            stats["newest_file"] = newest_file
+            stats["oldest_file"] = oldest_file
+            stats["cache_ttl"] = self.cache_ttl
+                
+            return stats
+        except Exception as e:
+            logger.error(f"獲取緩存統計資訊時發生錯誤: {str(e)}")
+            return {"error": str(e)}
+            
+    def clear_all(self):
+        """
+        清除所有緩存
+        
+        返回:
+            int: 清除的緩存文件數量
+        """
+        try:
+            count = 0
+            for cache_file in self.cache_dir.glob('*.json'):
+                cache_file.unlink()
+                count += 1
+                
+            if count > 0:
+                logger.info(f"已清除所有緩存，共 {count} 個文件")
+            return count
+        except Exception as e:
+            logger.error(f"清除所有緩存時發生錯誤: {str(e)}")
+            return 0
 
 # 全局緩存對象
 response_cache = ResponseCache(cache_ttl=7*86400)  # 設定緩存有效期為 7 天
