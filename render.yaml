@@ -27,3 +27,24 @@ services:
         sync: false  # 手動設定
     autoDeploy: true
     healthCheckPath: /health
+    
+  - type: worker
+    name: line-bot-morning-post
+    runtime: python
+    repo: https://github.com/aaronwu0804/line-bot.git
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: python src/main.py
+    plan: free
+    envVars:
+      - key: RENDER
+        value: "true"
+      - key: LINE_CHANNEL_ACCESS_TOKEN
+        sync: false  # 手動設定
+      - key: LINE_USER_ID
+        sync: false  # 手動設定
+      - key: CWB_API_KEY
+        sync: false  # 手動設定
+      - key: GEMINI_API_KEY
+        sync: false  # 手動設定
+    autoDeploy: true
