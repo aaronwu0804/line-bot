@@ -695,26 +695,51 @@ def send_morning_message():
         # 5. 獲取並添加圖片
         try:
             logger.info("正在獲取 Pinterest 圖片...")
-            image_url = get_pinterest_image()
+            pinterest_result = get_pinterest_image()
             
             # 強制打印日誌便於調試
-            print(f"取得的圖片 URL: {image_url}")
-            logger.info(f"取得的圖片 URL: {image_url}")
+            print(f"取得的 Pinterest 結果: {pinterest_result}")
+            logger.info(f"取得的 Pinterest 結果: {pinterest_result}")
+            
+            # 判斷回傳值是本地檔案路徑還是 URL
+            image_url = pinterest_result
+            if pinterest_result and isinstance(pinterest_result, str) and os.path.isfile(pinterest_result):
+                logger.info(f"Pinterest 返回的是本地檔案路徑: {pinterest_result}")
+                
+                try:
+                    # 導入上傳圖床功能
+                    try:
+                        from src.backup_image_service import upload_image_to_imgbb
+                    except ImportError:
+                        from backup_image_service import upload_image_to_imgbb
+                    
+                    # 將本地檔案上傳到圖床
+                    logger.info("正在上傳本地圖片到圖床...")
+                    upload_url = upload_image_to_imgbb(pinterest_result)
+                    if upload_url:
+                        logger.info(f"成功將圖片上傳到圖床: {upload_url}")
+                        image_url = upload_url
+                    else:
+                        logger.warning("上傳圖片到圖床失敗，使用備用圖片")
+                        image_url = get_backup_image()
+                except Exception as upload_error:
+                    logger.error(f"上傳圖片時發生錯誤: {str(upload_error)}")
+                    image_url = get_backup_image()
             
             # 檢查獲取的圖片 URL 是否有效
             if not image_url or not isinstance(image_url, str) or len(image_url) < 10:
-                logger.warning(f"未能獲取有效的 Pinterest 圖片 URL: '{image_url}'")
+                logger.warning(f"未能獲取有效的圖片資源: '{image_url}'")
                 logger.info("嘗試使用備用圖片...")
                 image_url = get_backup_image()
                 logger.info(f"備用圖片 URL: {image_url}")
             
             # 確保圖片 URL 有效
             if image_url and isinstance(image_url, str) and len(image_url) > 10:
-                logger.info(f"成功獲取圖片 URL: {image_url}")
+                logger.info(f"成功獲取圖片資源: {image_url}")
                 
-                # 檢查圖片 URL 格式
+                # 檢查圖片資源格式
                 if not (image_url.startswith('http://') or image_url.startswith('https://')):
-                    logger.error(f"圖片 URL 格式無效: {image_url}")
+                    logger.error(f"圖片資源格式無效 (需要 URL): {image_url}")
                     # 使用備用圖片
                     image_url = get_backup_image()
                     logger.info(f"已切換到備用圖片 URL: {image_url}")
@@ -726,7 +751,8 @@ def send_morning_message():
                 
                 # 檢查圖片 URL 是否可以訪問
                 try:
-                    response = requests.head(image_url, timeout=10)
+                    response = requests.head(image_url, timeout=10, 
+                                           headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'})
                     logger.info(f"圖片 URL 檢查: 狀態碼 {response.status_code}")
                     if response.status_code != 200:
                         logger.warning(f"圖片 URL 可能無效，狀態碼: {response.status_code}")
@@ -894,6 +920,28 @@ def send_morning_message():
                 logger.error(f"發送備用訊息也失敗了: {str(fallback_error)}")
             # 不要在這裡拋出異常，讓程式能夠繼續執行
         
+        # 清理舊圖片
+        try:
+            # 導入圖片清理模組
+            try:
+                from src.image_cleaner import clean_old_images
+                logger.info("從 src 導入圖片清理模組")
+            except ImportError:
+                from image_cleaner import clean_old_images
+                logger.info("導入圖片清理模組")
+                
+            # 設置保留 7 天內的圖片，刪除更舊的
+            deleted_count = clean_old_images(max_age_days=7)
+            
+            if deleted_count > 0:
+                logger.info(f"圖片清理完成：已刪除 {deleted_count} 張超過 7 天的舊圖片")
+            else:
+                logger.info("圖片清理完成：沒有需要刪除的舊圖片")
+                
+        except Exception as clean_error:
+            logger.error(f"清理舊圖片時發生錯誤: {str(clean_error)}")
+            # 不讓圖片清理錯誤影響主程式運行
+        
     except Exception as e:
         logger.error(f"發送早安訊息失敗：{str(e)}")
 
@@ -931,11 +979,34 @@ if __name__ == "__main__":
         
         # 檢查命令行參數
         import sys
-        if len(sys.argv) > 1 and sys.argv[1] == "--test":
-            logger.info("==== 執行測試模式 ====")
-            logger.info("發送一次測試訊息，不啟動排程")
-            send_morning_message()
-            logger.info("測試訊息發送完成")
+        if len(sys.argv) > 1:
+            if sys.argv[1] == "--test":
+                logger.info("==== 執行測試模式 ====")
+                logger.info("發送一次測試訊息，不啟動排程")
+                send_morning_message()
+                logger.info("測試訊息發送完成")
+            elif sys.argv[1] == "--schedule-only":
+                logger.info("==== 僅啟動排程模式 ====")
+                logger.info("跳過初始訊息，直接啟動排程")
+                # 只啟動排程，不發送立即訊息
+                main()
+            elif sys.argv[1] == "--clean-images":
+                logger.info("==== 執行圖片清理模式 ====")
+                try:
+                    from src.image_cleaner import clean_old_images
+                except ImportError:
+                    from image_cleaner import clean_old_images
+                    
+                # 如果有指定天數參數，則使用該參數
+                max_age_days = 7  # 預設 7 天
+                if len(sys.argv) > 2:
+                    try:
+                        max_age_days = int(sys.argv[2])
+                    except ValueError:
+                        logger.warning(f"無效的天數參數: {sys.argv[2]}，使用預設值 7 天")
+                
+                deleted = clean_old_images(max_age_days=max_age_days)
+                logger.info(f"圖片清理完成: 已刪除 {deleted} 張超過 {max_age_days} 天的舊圖片")
         else:
             logger.info("==== 開始發送早安訊息 ====")
             # 立即發送一次訊息

@@ -34,7 +34,7 @@ services:
     repo: https://github.com/aaronwu0804/line-bot.git
     branch: main
     buildCommand: pip install -r requirements.txt
-    startCommand: python src/main.py
+    startCommand: python src/main.py --schedule-only
     plan: free
     envVars:
       - key: RENDER
