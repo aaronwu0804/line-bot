@@ -47,18 +47,62 @@ def get_local_image():
 
 def get_fallback_image_url():
     """獲取固定的備用網絡圖片 URL"""
-    # 這些 URLs 已確認是穩定可用的圖片
+    # 這些 URLs 已確認是穩定可用的圖片 - 僅使用 Unsplash 的圖片服務，因為它們更可靠
     backup_urls = [
-        "https://i.pinimg.com/originals/e5/73/7c/e5737c44dd061635766b6682a3e42d69.jpg",  # 早安鮮花
-        "https://i.pinimg.com/originals/9d/76/0d/9d760d6dadae740e0f2d8cbd4b52e043.jpg",  # 早安日出
-        "https://i.pinimg.com/originals/8a/ef/e9/8aefe9e96814ae95c4bcc7b8e8f3cdc0.jpg",  # 早安山景
-        "https://i.pinimg.com/originals/25/fd/35/25fd3521446741caa643777a0417c814.jpg",  # 早安咖啡
-        "https://i.pinimg.com/originals/bc/54/2c/bc542c3b29df8a0a23c1350e32a785c9.jpg"   # 早安花朵
+        "https://images.unsplash.com/photo-1552346989-e069318e20a5?w=800&q=80",  # 早安咖啡
+        "https://images.unsplash.com/photo-1470240731273-7821a6eeb6bd?w=800&q=80",  # 早安日出
+        "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&q=80",  # 早安晨光
+        "https://images.unsplash.com/photo-1495197359483-d092478c170a?w=800&q=80",  # 早安鮮花
+        "https://images.unsplash.com/photo-1510431198538-e9682f25eb0e?w=800&q=80",  # 早晨咖啡與點心
+        "https://images.unsplash.com/photo-1487622750296-6360190669a1?w=800&q=80",  # 陽光下的咖啡
+        "https://images.unsplash.com/photo-1506815444479-bfdb1e96c566?w=800&q=80"   # 田野晨光
     ]
     
     selected_url = random.choice(backup_urls)
     logger.info(f"使用備用網絡圖片: {selected_url}")
     return selected_url
+
+def upload_image_to_imgbb(image_path):
+    """將本地圖片上傳到 ImgBB 圖床"""
+    try:
+        import base64
+        import requests
+        import os
+        from dotenv import load_dotenv
+        
+        # 嘗試從 .env.imgbb 文件加載 API 密鑰
+        dotenv_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env.imgbb')
+        if os.path.exists(dotenv_path):
+            load_dotenv(dotenv_path)
+        
+        # 從環境變數獲取 API 密鑰，如果沒有設置則使用默認值
+        api_key = os.getenv("IMGBB_API_KEY", "c0262e9328f9505db61c572f15db9f29")
+        
+        # 讀取圖片並轉為 base64
+        with open(image_path, "rb") as file:
+            image_data = base64.b64encode(file.read()).decode('utf-8')
+        
+        # 上傳到 ImgBB
+        url = "https://api.imgbb.com/1/upload"
+        payload = {
+            "key": api_key,
+            "image": image_data,
+            "name": os.path.basename(image_path)
+        }
+        
+        response = requests.post(url, payload)
+        if response.status_code == 200:
+            result = response.json()
+            if result["success"]:
+                image_url = result["data"]["url"]
+                logger.info(f"圖片成功上傳到 ImgBB: {image_url}")
+                return image_url
+        
+        logger.error(f"上傳圖片到 ImgBB 失敗: {response.text}")
+        return None
+    except Exception as e:
+        logger.error(f"上傳圖片時發生錯誤: {str(e)}")
+        return None
 
 def get_backup_image():
     """
@@ -69,10 +113,15 @@ def get_backup_image():
     if local_image:
         # 檢查是否需要上傳到圖床
         if local_image.startswith('/'):
-            # 這是本地文件路徑，LINE 不支持直接發送本地圖片
-            # 在這裡我們不做上傳處理，而是使用備用網絡圖片
-            logger.info("本地圖片需要上傳，將使用備用網絡圖片")
-            return get_fallback_image_url()
+            # 嘗試將本地圖片上傳到圖床
+            logger.info(f"嘗試上傳本地圖片到圖床: {local_image}")
+            image_url = upload_image_to_imgbb(local_image)
+            if image_url:
+                logger.info(f"成功將本地圖片上傳到圖床: {image_url}")
+                return image_url
+            else:
+                logger.warning("本地圖片上傳失敗，將使用備用網絡圖片")
+                return get_fallback_image_url()
         return local_image
     
     # 如果本地圖片獲取失敗，使用備用網絡圖片
