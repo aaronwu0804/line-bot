@@ -39,6 +39,8 @@ services:
     envVars:
       - key: RENDER
         value: "true"
+      - key: SAVE_IMAGES_LOCALLY
+        value: "true"  # 啟用本地圖片儲存
       - key: LINE_CHANNEL_ACCESS_TOKEN
         sync: false  # 手動設定
       - key: LINE_USER_ID
