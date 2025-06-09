@@ -47,15 +47,29 @@ def get_local_image():
 
 def get_fallback_image_url():
     """獲取固定的備用網絡圖片 URL"""
-    # 這些 URLs 已確認是穩定可用的圖片 - 僅使用 Unsplash 的圖片服務，因為它們更可靠
+    # 這些 URLs 已確認是穩定可用的圖片 - 優先使用含有早安文字的圖片
     backup_urls = [
+        # Pinterest 早安文字圖片優先 (含明確早安/Good Morning 文字)
+        "https://i.pinimg.com/originals/e5/73/7c/e5737c44dd061635766b6682a3e42d69.jpg",  # 早安花朵文字
+        "https://i.pinimg.com/originals/11/32/7a/11327a45919c5d5104a4ce9eecae58d4.jpg",  # 水彩風格早安
+        "https://i.pinimg.com/originals/69/6a/7e/696a7e415b405bd58b6b8c82e2d8d7ff.jpg",  # 早安咖啡文字
+        "https://i.pinimg.com/originals/aa/47/60/aa4760f6bee12654d39f576ceadfaa4c.jpg",  # 早安花朵與文字
+        "https://i.pinimg.com/originals/64/f8/f2/64f8f2cd3fa0affd248a5d140260f490.jpg",  # 早安陽光問候
+        "https://i.pinimg.com/originals/65/d6/ca/65d6ca8877a01c7d2d31e9d43733f20f.jpg",  # 早安芭蕉葉
+        "https://i.pinimg.com/originals/d1/27/7d/d1277da3e2cca7c5367c408dac59ccb9.jpg",  # 早安花環
+        "https://i.pinimg.com/originals/df/9a/88/df9a88ffa207c8f176cc654505838e66.jpg",  # 早安咖啡方塊文字
+        "https://i.pinimg.com/originals/20/c4/32/20c4329c822b4ec5d6d5fe0604c8ed68.jpg",  # 早安樹葉文字
+        
+        # Pixabay 早安文字圖片 (含明確早安/Good Morning 文字)
+        "https://cdn.pixabay.com/photo/2017/11/06/17/05/good-morning-2924423_1280.jpg",  # 木牌早安文字
+        "https://cdn.pixabay.com/photo/2019/12/07/04/17/good-morning-4678832_1280.jpg",  # 早安花卉文字
+        "https://cdn.pixabay.com/photo/2018/02/13/22/02/good-morning-3151909_1280.jpg",  # 早安玫瑰
+        "https://cdn.pixabay.com/photo/2016/03/09/16/16/woman-1246844_1280.jpg",    # 早安咖啡女孩
+        
+        # Unsplash 早安場景圖片 (備用，僅當上述圖片無法加載時使用)
         "https://images.unsplash.com/photo-1552346989-e069318e20a5?w=800&q=80",  # 早安咖啡
         "https://images.unsplash.com/photo-1470240731273-7821a6eeb6bd?w=800&q=80",  # 早安日出
-        "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&q=80",  # 早安晨光
-        "https://images.unsplash.com/photo-1495197359483-d092478c170a?w=800&q=80",  # 早安鮮花
-        "https://images.unsplash.com/photo-1510431198538-e9682f25eb0e?w=800&q=80",  # 早晨咖啡與點心
-        "https://images.unsplash.com/photo-1487622750296-6360190669a1?w=800&q=80",  # 陽光下的咖啡
-        "https://images.unsplash.com/photo-1506815444479-bfdb1e96c566?w=800&q=80"   # 田野晨光
+        "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&q=80"   # 早安晨光
     ]
     
     selected_url = random.choice(backup_urls)
@@ -120,7 +134,7 @@ def get_backup_image():
                 logger.info(f"成功將本地圖片上傳到圖床: {image_url}")
                 return image_url
             else:
-                logger.warning("本地圖片上傳失敗，將使用備用網絡圖片")
+                logger.warning("本地圖片上傳失敗，使用備用網絡圖片")
                 return get_fallback_image_url()
         return local_image
     
