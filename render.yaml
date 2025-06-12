@@ -34,13 +34,15 @@ services:
     repo: https://github.com/aaronwu0804/line-bot.git
     branch: main
     buildCommand: pip install -r requirements.txt
-    startCommand: python src/main.py --schedule-only
+    startCommand: bash -c "python keep_render_alive.py & python src/main.py --schedule-only"
     plan: free
     envVars:
       - key: RENDER
         value: "true"
       - key: SAVE_IMAGES_LOCALLY
         value: "true"  # 啟用本地圖片儲存
+      - key: TZ
+        value: "Asia/Taipei"  # 設置為台北時區
       - key: LINE_CHANNEL_ACCESS_TOKEN
         sync: false  # 手動設定
       - key: LINE_USER_ID

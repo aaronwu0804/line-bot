@@ -961,6 +961,15 @@ def main():
     logger.info("排程已啟動：平日 07:00、週末 08:00")
     
     while True:
+        pending_jobs = schedule.get_jobs()
+        next_run = min([job.next_run for job in pending_jobs]) if pending_jobs else None
+        if next_run:
+            logger.info(f"等待下次排程執行，下次執行時間: {next_run.strftime('%Y-%m-%d %H:%M:%S')}")
+        
+        # 檢查並記錄當前時間
+        current_time = datetime.now()
+        logger.debug(f"當前時間: {current_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        
         schedule.run_pending()
         time.sleep(60)
 
