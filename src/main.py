@@ -638,12 +638,14 @@ def send_morning_message():
         # 獲取天氣資訊
         logger.info("開始獲取天氣資訊...")
         weather_service = WeatherService(os.getenv('CWB_API_KEY'))
-        weather = weather_service.get_taoyuan_weather()
         
-        # 如果無法獲取天氣資料，使用備用資料
-        if not weather and hasattr(weather_service, 'get_backup_weather'):
-            logger.info("使用備用天氣資料")
-            weather = weather_service.get_backup_weather()
+        # 直接使用備用天氣資料作為主要資料，而不是先嘗試連接中央氣象局 API
+        logger.info("直接使用備用天氣資料作為主要資料")
+        weather = weather_service.get_backup_weather()
+        
+        # 如果備用資料也無法獲取，仍然設置為 None
+        if not weather:
+            logger.warning("無法獲取備用天氣資料")
         
         # 生成天氣相關的問候語，計時以判別是否為 AI 生成
         current_time = datetime.now().strftime('%Y年%m月%d日')
