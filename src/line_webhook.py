@@ -572,6 +572,48 @@ def end_conversation(user_id):
     # 可選：根據需求決定是否要清除對話歷史
     # clear_user_history(user_id)
 
+@app.route("/clear_cache", methods=['POST', 'GET'])
+def clear_cache():
+    """清除特定緩存項目的 API 端點"""
+    try:
+        # 導入緩存模組
+        try:
+            from src.response_cache import response_cache
+        except ImportError:
+            try:
+                from response_cache import response_cache
+            except ImportError:
+                return jsonify({"status": "error", "message": "無法導入緩存模組"}), 500
+        
+        # 要清除的圖片生成相關提示
+        image_prompts = [
+            "生成圖片，一群小孩在打棒球 是室內棒球場",
+            "生成圖片,一群小孩在打棒球 是室內棒球場", 
+            "生成圖片，一群小孩在打棒球是室內棒球場",
+            "生成圖片 一群小孩在打棒球 是室內棒球場",
+            "生成圖片，一群小孩在打棒球",
+        ]
+        
+        cleared_count = 0
+        for prompt in image_prompts:
+            if response_cache.delete(prompt):
+                cleared_count += 1
+                logger.info(f"已清除緩存: {prompt[:30]}...")
+        
+        # 獲取緩存統計
+        stats = response_cache.get_stats()
+        
+        return jsonify({
+            "status": "ok",
+            "message": f"已清除 {cleared_count} 個圖片生成相關緩存",
+            "cleared_count": cleared_count,
+            "cache_stats": stats
+        })
+        
+    except Exception as e:
+        logger.error(f"清除緩存時發生錯誤: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 @app.route("/health", methods=['GET'])
 def health_check():
     """健康檢查 API 端點，用於防止 Render 服務休眠"""
