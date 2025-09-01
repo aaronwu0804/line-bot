@@ -22,6 +22,7 @@ from linebot.v3.messaging import (
     ApiClient,
     MessagingApi,
     ReplyMessageRequest,
+    PushMessageRequest,
     TextMessage
 )
 from linebot.v3.webhooks import MessageEvent, TextMessageContent
@@ -153,6 +154,10 @@ def handle_text_message(event):
             start_conversation(user_id)
             logger.info(f"識別為 AI 請求")
             
+            # 發送「處理中」狀態指示
+            processing_message = get_processing_message()
+            reply_to_user(event.reply_token, processing_message)
+            
             # 取出真實查詢內容（去除前綴）
             query = extract_query(user_message)
             logger.info(f"提取的查詢: {query}")
@@ -169,14 +174,14 @@ def handle_text_message(event):
                 # 更新對話歷史
                 update_conversation_history(user_id, query, ai_response)
                 
-                # 回覆訊息
-                logger.info(f"回覆訊息給用戶")
-                reply_to_user(event.reply_token, ai_response)
+                # 使用 Push Message 發送最終回應
+                logger.info(f"發送最終回應給用戶")
+                push_message_to_user(user_id, ai_response)
                 
             except Exception as e:
                 logger.error(f"處理 AI 回應時發生錯誤: {str(e)}")
                 logger.error(traceback.format_exc())
-                reply_to_user(event.reply_token, "抱歉，處理您的請求時出現了問題，請稍後再試。")
+                push_message_to_user(user_id, "抱歉，處理您的請求時出現了問題，請稍後再試。")
         else:
             logger.info(f"非 AI 請求，回覆幫助訊息")
             # 非 AI 請求，可以提供說明或其他功能回應
@@ -367,6 +372,74 @@ def update_conversation_history(user_id, query, response):
     # 更新對話狀態 (設定最新活動時間)
     start_conversation(user_id)
 
+def get_processing_message():
+    """產生處理中狀態訊息"""
+    import random
+    messages = [
+        "🤔 讓我想想...",
+        "⏳ 正在處理您的請求中...",
+        "🧠 AI小幫手正在思考...",
+        "📝 正在為您準備回應...",
+        "🔍 分析中，請稍候...",
+        "💭 思考中..."
+    ]
+    return random.choice(messages)
+
+def push_message_to_user(user_id, message):
+    """使用 Push Message API 發送訊息給用戶"""
+    if not user_id:
+        logger.error("無法推送訊息：user_id 為空")
+        return False
+    
+    if not message:
+        logger.error("無法推送訊息：message 為空")
+        return False
+        
+    try:
+        logger.info(f"開始推送訊息給用戶 {user_id}")
+        with ApiClient(configuration) as api_client:
+            line_bot_api = MessagingApi(api_client)
+            
+            # 如果消息太長，分段發送
+            if len(message) > 5000:
+                logger.info(f"訊息過長 ({len(message)} 字符)，進行分段")
+                messages = split_long_message(message)
+                
+                # 發送第一段
+                response = line_bot_api.push_message(
+                    PushMessageRequest(
+                        to=user_id,
+                        messages=[TextMessage(text=messages[0])]
+                    )
+                )
+                logger.info(f"成功推送第一段訊息")
+                
+                # 發送剩餘段落
+                for i, msg in enumerate(messages[1:], 1):
+                    time.sleep(0.5)  # 避免發送太快
+                    line_bot_api.push_message(
+                        PushMessageRequest(
+                            to=user_id,
+                            messages=[TextMessage(text=msg)]
+                        )
+                    )
+                    logger.info(f"成功推送第 {i+1} 段訊息")
+            else:
+                logger.info(f"推送訊息，長度 {len(message)} 字符")
+                response = line_bot_api.push_message(
+                    PushMessageRequest(
+                        to=user_id,
+                        messages=[TextMessage(text=message)]
+                    )
+                )
+                logger.info(f"成功推送訊息")
+                
+        return True
+    except Exception as e:
+        logger.error(f"推送訊息時發生錯誤: {str(e)}")
+        logger.error(traceback.format_exc())
+        return False
+
 def reply_to_user(reply_token, message):
     """回覆使用者訊息"""
     if not reply_token:
@@ -426,7 +499,9 @@ def get_help_message():
         "- 或喊「小幫手」(例如：小幫手，介紹台灣夜市文化)\n"
         "- 或喊「花生」(例如：花生，幫我查一下這個字怎麼念)\n\n"
         "🔄 我具備上下文理解功能，一旦開始對話後，您可以直接提問，無需再加上前綴！\n\n"
-        "⏱️ 對話將在5分鐘無互動後自動結束，或您可以輸入「結束對話」來主動結束\n\n"
+        "⏱️ 當您發送問題時，我會先回覆處理狀態，讓您知道我正在思考中\n"
+        "📨 處理完成後會立即發送詳細回答\n\n"
+        "⏰ 對話將在5分鐘無互動後自動結束，或您可以輸入「結束對話」來主動結束\n\n"
         "🌟 AI小幫手花生祝您使用愉快！\n"
     )
 
