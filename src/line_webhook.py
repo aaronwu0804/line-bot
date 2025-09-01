@@ -173,10 +173,25 @@ def handle_text_message(event):
             conversation_history = conversation_histories.get(user_id, [])
             
             try:
-                # 調用 Gemini 服務獲取回應
-                logger.info(f"調用 Gemini API")
-                ai_response = get_gemini_response(query, conversation_history)
-                logger.info(f"Gemini 回應: {ai_response[:100] if len(ai_response) > 100 else ai_response}...")
+                # 調用帶有緩存的 AI 回應函數
+                logger.info(f"調用 AI 回應服務")
+                
+                # 嘗試調用 main.py 的帶緩存版本
+                try:
+                    from main import get_ai_response_with_cache
+                    ai_response = get_ai_response_with_cache(query, conversation_history)
+                    logger.info(f"使用 main.py 的緩存版本")
+                except ImportError:
+                    try:
+                        from src.main import get_ai_response_with_cache
+                        ai_response = get_ai_response_with_cache(query, conversation_history)
+                        logger.info(f"使用 src.main 的緩存版本")
+                    except ImportError:
+                        # 備用方案：直接調用 Gemini 服務（無緩存）
+                        logger.warning(f"無法導入緩存版本，使用直接版本")
+                        ai_response = get_gemini_response(query, conversation_history)
+                
+                logger.info(f"AI 回應: {ai_response[:100] if len(ai_response) > 100 else ai_response}...")
                 
                 # 更新對話歷史
                 update_conversation_history(user_id, query, ai_response)
