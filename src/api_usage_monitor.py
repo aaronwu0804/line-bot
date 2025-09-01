@@ -288,8 +288,8 @@ def test_api_calls():
     
     monitor = APIUsageMonitor()
     
-    # 模擬一些 API 調用
-    models = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"]
+    # 模擬一些 API 調用 (更新為 Gemini 2.5 模型)
+    models = ["gemini-2.5-flash", "gemini-2.0-flash-exp", "gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"]
     errors = [(None, None), ("429", "Rate limit exceeded"), 
               ("404", "Model not found"), ("400", "Invalid request")]
     
@@ -319,7 +319,7 @@ def test_gemini_api():
         genai.configure(api_key=api_key)
         
         monitor = APIUsageMonitor()
-        models_to_test = ["gemini-1.5-flash", "gemini-pro"]
+        models_to_test = ["gemini-2.5-flash", "gemini-2.0-flash-exp", "gemini-1.5-flash", "gemini-pro"]
         
         # 測試每個模型
         for model_name in models_to_test:

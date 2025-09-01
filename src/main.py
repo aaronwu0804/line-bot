@@ -220,8 +220,8 @@ def generate_ai_greeting(weather_info=None):
             if "/" in model:  # 如果有前綴，也保存原始名稱
                 normalized_models.append(model)
                 
-        # 優先使用免費/輕量級模型 (根據 Google AI 文檔 https://ai.google.dev/gemini-api/docs/pricing?hl=zh-tw)
-        model_preference = ["gemini-1.5-flash", "gemini-pro-vision", "gemini-pro", "gemini-1.5-pro"]
+        # 優先使用最新的 Gemini 2.5 模型 (Pro 權限支援最新功能)
+        model_preference = ["gemini-2.5-flash", "gemini-2.0-flash-exp", "gemini-1.5-flash", "gemini-pro-vision", "gemini-pro", "gemini-1.5-pro"]
         for name in model_preference:
             if name in normalized_models or f"models/{name}" in normalized_models:
                 model_name = name

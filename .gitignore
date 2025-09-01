@@ -27,6 +27,11 @@ wheels/
 *.log
 logs/
 
+# 忽略圖片檔案 (保留一個空的目錄)
+images/*.png
+images/*.jpg
+!images/.gitkeep
+
 # 虛擬環境
 venv/
 ENV/

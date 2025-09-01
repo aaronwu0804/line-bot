@@ -14,6 +14,7 @@
 - **全新 v2.1.0：** 智能緩存系統，減少重複 API 調用
 - **全新 v2.1.0：** 增強型錯誤處理，自動處理配額限制問題
 - **全新 v2.1.0：** 智能模型選擇，優先使用輕量級模型以節省配額
+- **全新 v2.2.0：** 自動清理舊圖片，防止儲存空間浪費和 Git 倉庫體積過大
 
 ## 安裝步驟
 
@@ -48,6 +49,24 @@ python start_bot.py
 執行測試模式（立即發送一條測試訊息，不啟動排程）：
 ```bash
 python start_bot.py --test
+```
+
+### 圖片清理功能
+
+早安訊息發送後會自動清理舊圖片，您也可以手動執行清理：
+
+```bash
+# 透過主程式清理圖片（清理 7 天前的圖片）
+python start_bot.py --clean-images
+
+# 指定清理 X 天前的圖片
+python start_bot.py --clean-images X
+
+# 使用獨立清理腳本（清理 7 天前的圖片）
+python src/clean_images.py
+
+# 使用獨立清理腳本（指定天數）
+python src/clean_images.py 10  # 清理 10 天前的圖片
 ```
 
 ### 啟動 Gemini AI 對話功能
