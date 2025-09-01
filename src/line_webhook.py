@@ -154,6 +154,12 @@ def handle_text_message(event):
             start_conversation(user_id)
             logger.info(f"識別為 AI 請求")
             
+            # 檢查是否為圖片生成請求
+            if is_image_generation_request(user_message):
+                logger.info("檢測到圖片生成請求")
+                reply_to_user(event.reply_token, "抱歉，我目前不支援圖片生成功能。\n\n我可以提供的服務包括：\n- 文字對話和問答\n- 每日早安圖片和天氣預報推送\n- 智能問候語生成\n\n如果您有其他文字相關的問題，我很樂意幫助您！")
+                return
+            
             # 發送「處理中」狀態指示
             processing_message = get_processing_message()
             reply_to_user(event.reply_token, processing_message)
@@ -196,6 +202,31 @@ def handle_text_message(event):
         except Exception as ex:
             logger.error(f"嘗試發送錯誤消息時也失敗: {str(ex)}")
             logger.error(traceback.format_exc())
+
+def is_image_generation_request(message):
+    """檢查是否為圖片生成請求"""
+    if not message:
+        return False
+    
+    message_lower = message.lower().strip()
+    
+    # 圖片生成相關關鍵字
+    image_keywords = [
+        '生成圖片', '產生圖片', '製作圖片', '畫圖片', '畫圖',
+        '生成圖像', '產生圖像', '製作圖像', 
+        'generate image', 'create image', 'make image', 'draw image',
+        'generate picture', 'create picture', 'make picture',
+        '圖片生成', '圖像生成', '生成一張圖', '畫一張圖',
+        '幫我畫', '幫我生成', '生成照片', '製作照片',
+        '生成一張', '產生一張', '製作一張'  # 新增更多變化
+    ]
+    
+    for keyword in image_keywords:
+        if keyword in message_lower:
+            logger.info(f"檢測到圖片生成關鍵字: '{keyword}'")
+            return True
+    
+    return False
 
 def is_ai_request(message):
     """檢查是否為 AI 對話請求 (最終版: 僅檢測訊息開頭或帶允許前導字符的關鍵字)
@@ -518,9 +549,11 @@ def check_active_conversation(user_id, current_time):
         last_activity_time = active_conversations[user_id]
         # 檢查是否超時
         if current_time - last_activity_time <= CONVERSATION_TIMEOUT:
+            logger.info(f"用戶 {user_id} 處於活躍對話狀態，剩餘時間: {CONVERSATION_TIMEOUT - (current_time - last_activity_time):.1f} 秒")
             return True
         else:
             # 超時自動結束對話
+            logger.info(f"用戶 {user_id} 對話已超時，自動結束")
             end_conversation(user_id)
             return False
     return False
