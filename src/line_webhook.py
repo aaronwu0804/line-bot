@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # filepath: /Users/al02451008/Documents/code/morning-post/src/line_webhook.py
 """
-LINE Bot Webhook 處理模組
+LINE Bot Webhook 處理模組 
 用於接收和處理 LINE Bot 的訊息
 支援與 Gemini AI 對話功能
 包含回應緩存和流量限制功能
+更新版本：支援圖片生成請求檢測
 """
 
 import os
