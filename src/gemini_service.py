@@ -61,6 +61,13 @@ def get_gemini_response(prompt, conversation_history=None, max_retries=5, retry_
     if not prompt or prompt.strip() == "":
         return "請提供一個問題或指示，我會盡力回答。"
     
+    # 第二層圖片生成檢測（防護措施）
+    prompt_lower = prompt.lower().strip()
+    image_keywords = ['生成圖片', '產生圖片', '製作圖片', '畫圖片', '畫圖', 'generate image', 'create image']
+    if any(keyword in prompt_lower for keyword in image_keywords):
+        logger.warning(f"在 Gemini 服務中檢測到圖片生成請求: {prompt[:30]}...")
+        return "抱歉，我目前不支援圖片生成功能。我可以幫您回答文字問題或提供其他服務。"
+    
     # 初始化 Gemini API
     if not init_genai():
         logger.error("Gemini API 初始化失敗")

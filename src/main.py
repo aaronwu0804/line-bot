@@ -221,7 +221,7 @@ def generate_ai_greeting(weather_info=None):
                 normalized_models.append(model)
                 
         # 優先使用最新的 Gemini 2.5 模型 (Pro 權限支援最新功能)
-        model_preference = ["gemini-2.5-flash", "gemini-2.0-flash-exp", "gemini-1.5-flash", "gemini-pro-vision", "gemini-pro", "gemini-1.5-pro"]
+        model_preference = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash-exp", "gemini-1.5-flash", "gemini-pro-vision", "gemini-pro", "gemini-1.5-pro"]
         for name in model_preference:
             if name in normalized_models or f"models/{name}" in normalized_models:
                 model_name = name

@@ -102,6 +102,13 @@ class ResponseCache:
             是否成功保存
         """
         try:
+            # 檢查是否為圖片生成請求，如果是則不緩存
+            prompt_lower = prompt.lower().strip()
+            image_keywords = ['生成圖片', '產生圖片', '製作圖片', '畫圖片', '畫圖', 'generate image', 'create image']
+            if any(keyword in prompt_lower for keyword in image_keywords):
+                logger.info(f"跳過緩存圖片生成請求: {prompt[:30]}...")
+                return False
+            
             cache_key = self._get_cache_key(prompt)
             cache_file = self._get_cache_file(cache_key)
             
