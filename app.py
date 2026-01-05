@@ -809,6 +809,50 @@ def handle_message(event):
     
     logger.info("用戶 %s 發送訊息: %s", user_id, user_message)
     
+    # 檢查是否為「每日單字」指令
+    if user_message.strip() in ['每日單字', '每日英語', 'Daily English', 'daily english', '單字']:
+        try:
+            from src.daily_english_service import get_daily_word, format_daily_english_message, get_word_audio_url
+            
+            # 獲取今日單字
+            word_data = get_daily_word()
+            message_text = format_daily_english_message(word_data)
+            
+            # 獲取語音URL
+            audio_url = get_word_audio_url(word_data['word'])
+            
+            # 回覆訊息
+            with ApiClient(configuration) as api_client:
+                line_bot_api = MessagingApi(api_client)
+                
+                messages = [TextMessage(text=message_text)]
+                
+                # 如果有語音URL,添加語音訊息提示
+                if audio_url:
+                    audio_hint = f"🔊 點擊連結聽發音:\n{audio_url}"
+                    messages.append(TextMessage(text=audio_hint))
+                
+                line_bot_api.reply_message(
+                    ReplyMessageRequest(
+                        reply_token=reply_token,
+                        messages=messages
+                    )
+                )
+                logger.info("已回覆每日單字")
+            return
+            
+        except Exception as e:
+            logger.error(f"處理每日單字時出錯: {str(e)}")
+            with ApiClient(configuration) as api_client:
+                line_bot_api = MessagingApi(api_client)
+                line_bot_api.reply_message(
+                    ReplyMessageRequest(
+                        reply_token=reply_token,
+                        messages=[TextMessage(text="抱歉,獲取每日單字時發生錯誤,請稍後再試。")]
+                    )
+                )
+            return
+    
     # 檢查用戶是否處於活躍對話狀態
     current_time = time.time()
     is_active_conversation = check_active_conversation(user_id, current_time)
