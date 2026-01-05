@@ -812,14 +812,15 @@ def handle_message(event):
     # 檢查是否為「每日單字」指令
     if user_message.strip() in ['每日單字', '每日英語', 'Daily English', 'daily english', '單字']:
         try:
-            from src.daily_english_service import get_daily_word, format_daily_english_message, get_word_audio_url
+            from src.daily_english_service import get_daily_word, format_daily_english_message, get_word_audio_url, get_sentence_audio_url
             
             # 獲取今日單字
             word_data = get_daily_word()
             message_text = format_daily_english_message(word_data)
             
-            # 獲取語音URL
-            audio_url = get_word_audio_url(word_data['word'])
+            # 獲取單字和例句的語音URL
+            word_audio_url = get_word_audio_url(word_data['word'])
+            sentence_audio_url = get_sentence_audio_url(word_data['sentence'])
             
             # 回覆訊息
             with ApiClient(configuration) as api_client:
@@ -827,10 +828,16 @@ def handle_message(event):
                 
                 messages = [TextMessage(text=message_text)]
                 
-                # 如果有語音URL,添加語音訊息提示
-                if audio_url:
-                    audio_hint = f"🔊 點擊連結聽發音:\n{audio_url}"
-                    messages.append(TextMessage(text=audio_hint))
+                # 添加發音連結
+                audio_links = []
+                if word_audio_url:
+                    audio_links.append(f"🔊 單字發音:\n{word_audio_url}")
+                if sentence_audio_url:
+                    audio_links.append(f"🔊 例句發音:\n{sentence_audio_url}")
+                
+                if audio_links:
+                    audio_message = "\n\n".join(audio_links)
+                    messages.append(TextMessage(text=audio_message))
                 
                 line_bot_api.reply_message(
                     ReplyMessageRequest(

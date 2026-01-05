@@ -145,10 +145,27 @@ def get_word_audio_url(word: str) -> str:
     try:
         # 使用 Google TTS API
         # 注意: 這是簡化版本,實際應用中可能需要使用官方SDK或付費服務
-        tts_url = f"https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q={word}"
+        import urllib.parse
+        encoded_word = urllib.parse.quote(word)
+        tts_url = f"https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q={encoded_word}"
         return tts_url
     except Exception as e:
         logger.error(f"獲取語音URL失敗: {str(e)}")
+        return None
+
+def get_sentence_audio_url(sentence: str) -> str:
+    """
+    獲取例句的語音URL
+    使用免費的文字轉語音API
+    """
+    try:
+        # 使用 Google TTS API
+        import urllib.parse
+        encoded_sentence = urllib.parse.quote(sentence)
+        tts_url = f"https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q={encoded_sentence}"
+        return tts_url
+    except Exception as e:
+        logger.error(f"獲取例句語音URL失敗: {str(e)}")
         return None
 
 def download_word_audio(word: str, save_path: str = None) -> str:
@@ -212,5 +229,8 @@ if __name__ == "__main__":
     
     # 測試語音URL
     print("\n" + "="*50)
-    audio_url = get_word_audio_url(word_data['word'])
-    print(f"語音URL: {audio_url}")
+    word_audio_url = get_word_audio_url(word_data['word'])
+    print(f"單字語音URL: {word_audio_url}")
+    
+    sentence_audio_url = get_sentence_audio_url(word_data['sentence'])
+    print(f"例句語音URL: {sentence_audio_url}")
