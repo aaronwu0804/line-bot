@@ -105,8 +105,11 @@ def generate_full_year_words():
 FULL_YEAR_WORDS = generate_full_year_words()
 
 def get_day_of_year() -> int:
-    """獲取今天是一年中的第幾天 (1-365)"""
-    today = datetime.datetime.now()
+    """獲取今天是一年中的第幾天 (1-365)，使用台灣時區"""
+    import pytz
+    # 使用台灣時區
+    tw_tz = pytz.timezone('Asia/Taipei')
+    today = datetime.datetime.now(tw_tz)
     day_of_year = today.timetuple().tm_yday
     return day_of_year
 
