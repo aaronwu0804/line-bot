@@ -69,37 +69,168 @@ DAILY_WORDS = [
     {"word": "weather", "pos": "n.", "meaning": "天氣", "sentence": "The weather is nice today.", "translation": "今天天氣很好。"},
     {"word": "exercise", "pos": "n.", "meaning": "運動", "sentence": "Daily exercise keeps you healthy.", "translation": "每天運動讓你保持健康。"},
     {"word": "zebra", "pos": "n.", "meaning": "斑馬", "sentence": "Zebras have black and white stripes.", "translation": "斑馬有黑白條紋。"},
+    
+    # 第51-100個單字
+    {"word": "ability", "pos": "n.", "meaning": "能力", "sentence": "She has the ability to succeed.", "translation": "她有成功的能力。"},
+    {"word": "accept", "pos": "v.", "meaning": "接受", "sentence": "I accept your invitation.", "translation": "我接受你的邀請。"},
+    {"word": "accident", "pos": "n.", "meaning": "意外", "sentence": "There was a car accident yesterday.", "translation": "昨天發生了一場車禍。"},
+    {"word": "active", "pos": "adj.", "meaning": "活躍的", "sentence": "She is very active in sports.", "translation": "她在運動方面很活躍。"},
+    {"word": "activity", "pos": "n.", "meaning": "活動", "sentence": "Swimming is my favorite activity.", "translation": "游泳是我最喜歡的活動。"},
+    {"word": "afraid", "pos": "adj.", "meaning": "害怕的", "sentence": "Don't be afraid of making mistakes.", "translation": "不要害怕犯錯。"},
+    {"word": "agreement", "pos": "n.", "meaning": "同意", "sentence": "We reached an agreement.", "translation": "我們達成了協議。"},
+    {"word": "allow", "pos": "v.", "meaning": "允許", "sentence": "My parents allow me to stay up late.", "translation": "我父母允許我晚睡。"},
+    {"word": "already", "pos": "adv.", "meaning": "已經", "sentence": "I have already finished my homework.", "translation": "我已經完成作業了。"},
+    {"word": "amazing", "pos": "adj.", "meaning": "驚人的", "sentence": "The view is amazing!", "translation": "風景太驚人了!"},
+    
+    {"word": "ancient", "pos": "adj.", "meaning": "古老的", "sentence": "We visited an ancient temple.", "translation": "我們參觀了一座古老的寺廟。"},
+    {"word": "angry", "pos": "adj.", "meaning": "生氣的", "sentence": "Please don't be angry with me.", "translation": "請不要生我的氣。"},
+    {"word": "announce", "pos": "v.", "meaning": "宣布", "sentence": "They will announce the winner tomorrow.", "translation": "他們明天會宣布獲勝者。"},
+    {"word": "another", "pos": "adj.", "meaning": "另一個", "sentence": "Can I have another cookie?", "translation": "我可以再吃一塊餅乾嗎?"},
+    {"word": "answer", "pos": "n.", "meaning": "答案", "sentence": "What's the answer to this question?", "translation": "這個問題的答案是什麼?"},
+    {"word": "anybody", "pos": "pron.", "meaning": "任何人", "sentence": "Is anybody home?", "translation": "有人在家嗎?"},
+    {"word": "anyway", "pos": "adv.", "meaning": "無論如何", "sentence": "I'm going anyway.", "translation": "無論如何我都要去。"},
+    {"word": "appear", "pos": "v.", "meaning": "出現", "sentence": "Stars appear at night.", "translation": "星星在夜晚出現。"},
+    {"word": "arrive", "pos": "v.", "meaning": "到達", "sentence": "What time will you arrive?", "translation": "你什麼時候到達?"},
+    {"word": "attend", "pos": "v.", "meaning": "參加", "sentence": "I will attend the meeting.", "translation": "我會參加會議。"},
+    
+    # 第101-150個單字
+    {"word": "attract", "pos": "v.", "meaning": "吸引", "sentence": "Flowers attract bees.", "translation": "花朵吸引蜜蜂。"},
+    {"word": "audience", "pos": "n.", "meaning": "觀眾", "sentence": "The audience clapped loudly.", "translation": "觀眾大聲鼓掌。"},
+    {"word": "avoid", "pos": "v.", "meaning": "避免", "sentence": "Try to avoid junk food.", "translation": "試著避免垃圾食物。"},
+    {"word": "awake", "pos": "adj.", "meaning": "醒著的", "sentence": "Are you still awake?", "translation": "你還醒著嗎?"},
+    {"word": "背景", "pos": "n.", "meaning": "背景", "sentence": "Tell me about your background.", "translation": "告訴我你的背景。"},
+    {"word": "balance", "pos": "n.", "meaning": "平衡", "sentence": "Keep your balance!", "translation": "保持平衡!"},
+    {"word": "basic", "pos": "adj.", "meaning": "基本的", "sentence": "These are basic skills.", "translation": "這些是基本技能。"},
+    {"word": "battle", "pos": "n.", "meaning": "戰鬥", "sentence": "They won the battle.", "translation": "他們贏得了戰鬥。"},
+    {"word": "beach", "pos": "n.", "meaning": "海灘", "sentence": "Let's go to the beach!", "translation": "我們去海灘吧!"},
+    {"word": "behave", "pos": "v.", "meaning": "表現", "sentence": "Please behave yourself.", "translation": "請你表現好一點。"},
+    
+    {"word": "belong", "pos": "v.", "meaning": "屬於", "sentence": "This book belongs to me.", "translation": "這本書屬於我。"},
+    {"word": "benefit", "pos": "n.", "meaning": "好處", "sentence": "Exercise has many benefits.", "translation": "運動有很多好處。"},
+    {"word": "besides", "pos": "prep.", "meaning": "除了", "sentence": "Besides English, I study math.", "translation": "除了英語,我還學數學。"},
+    {"word": "between", "pos": "prep.", "meaning": "在...之間", "sentence": "Sit between your friends.", "translation": "坐在你朋友之間。"},
+    {"word": "birthday", "pos": "n.", "meaning": "生日", "sentence": "Happy birthday to you!", "translation": "祝你生日快樂!"},
+    {"word": "bottom", "pos": "n.", "meaning": "底部", "sentence": "The key is at the bottom.", "translation": "鑰匙在底部。"},
+    {"word": "boundary", "pos": "n.", "meaning": "邊界", "sentence": "Don't cross the boundary.", "translation": "不要越界。"},
+    {"word": "brain", "pos": "n.", "meaning": "大腦", "sentence": "Use your brain to think.", "translation": "用你的大腦思考。"},
+    {"word": "branch", "pos": "n.", "meaning": "樹枝", "sentence": "A bird sits on the branch.", "translation": "一隻鳥坐在樹枝上。"},
+    {"word": "brave", "pos": "adj.", "meaning": "勇敢的", "sentence": "You are very brave!", "translation": "你很勇敢!"},
+    
+    # 第151-200個單字
+    {"word": "breathe", "pos": "v.", "meaning": "呼吸", "sentence": "Take a deep breath.", "translation": "深呼吸。"},
+    {"word": "bridge", "pos": "n.", "meaning": "橋", "sentence": "We walked across the bridge.", "translation": "我們走過了橋。"},
+    {"word": "bright", "pos": "adj.", "meaning": "明亮的", "sentence": "The sun is bright today.", "translation": "今天陽光明亮。"},
+    {"word": "bring", "pos": "v.", "meaning": "帶來", "sentence": "Please bring your textbook.", "translation": "請帶你的課本。"},
+    {"word": "brother", "pos": "n.", "meaning": "兄弟", "sentence": "My brother is tall.", "translation": "我哥哥很高。"},
+    {"word": "building", "pos": "n.", "meaning": "建築物", "sentence": "That building is very old.", "translation": "那棟建築物很老舊。"},
+    {"word": "busy", "pos": "adj.", "meaning": "忙碌的", "sentence": "I'm busy with homework.", "translation": "我忙於做作業。"},
+    {"word": "butterfly", "pos": "n.", "meaning": "蝴蝶", "sentence": "A butterfly landed on the flower.", "translation": "一隻蝴蝶停在花上。"},
+    {"word": "calendar", "pos": "n.", "meaning": "日曆", "sentence": "Check the calendar for the date.", "translation": "查看日曆確認日期。"},
+    {"word": "camera", "pos": "n.", "meaning": "相機", "sentence": "I bought a new camera.", "translation": "我買了一台新相機。"},
+    
+    {"word": "cancel", "pos": "v.", "meaning": "取消", "sentence": "We had to cancel the trip.", "translation": "我們必須取消旅行。"},
+    {"word": "captain", "pos": "n.", "meaning": "隊長", "sentence": "He is the team captain.", "translation": "他是隊長。"},
+    {"word": "capture", "pos": "v.", "meaning": "捕捉", "sentence": "Try to capture this moment.", "translation": "試著捕捉這個時刻。"},
+    {"word": "careful", "pos": "adj.", "meaning": "小心的", "sentence": "Be careful on the stairs.", "translation": "在樓梯上要小心。"},
+    {"word": "careless", "pos": "adj.", "meaning": "粗心的", "sentence": "Don't be careless with your work.", "translation": "做事不要粗心。"},
+    {"word": "carry", "pos": "v.", "meaning": "攜帶", "sentence": "Can you carry this bag?", "translation": "你能拿這個袋子嗎?"},
+    {"word": "castle", "pos": "n.", "meaning": "城堡", "sentence": "We visited a beautiful castle.", "translation": "我們參觀了一座美麗的城堡。"},
+    {"word": "catch", "pos": "v.", "meaning": "抓住", "sentence": "Catch the ball!", "translation": "接住球!"},
+    {"word": "celebrate", "pos": "v.", "meaning": "慶祝", "sentence": "Let's celebrate your success!", "translation": "讓我們慶祝你的成功!"},
+    {"word": "center", "pos": "n.", "meaning": "中心", "sentence": "The store is in the city center.", "translation": "商店在市中心。"},
+    
+    # 第201-250個單字
+    {"word": "century", "pos": "n.", "meaning": "世紀", "sentence": "We live in the 21st century.", "translation": "我們生活在21世紀。"},
+    {"word": "certain", "pos": "adj.", "meaning": "確定的", "sentence": "I'm certain about this.", "translation": "我對此很確定。"},
+    {"word": "challenge", "pos": "n.", "meaning": "挑戰", "sentence": "This is a big challenge.", "translation": "這是個大挑戰。"},
+    {"word": "chance", "pos": "n.", "meaning": "機會", "sentence": "Give me another chance.", "translation": "再給我一次機會。"},
+    {"word": "change", "pos": "v.", "meaning": "改變", "sentence": "People can change.", "translation": "人是可以改變的。"},
+    {"word": "character", "pos": "n.", "meaning": "性格", "sentence": "He has a good character.", "translation": "他有好的性格。"},
+    {"word": "charge", "pos": "v.", "meaning": "充電", "sentence": "Please charge your phone.", "translation": "請給你的手機充電。"},
+    {"word": "cheap", "pos": "adj.", "meaning": "便宜的", "sentence": "This shirt is very cheap.", "translation": "這件襯衫很便宜。"},
+    {"word": "cheer", "pos": "v.", "meaning": "歡呼", "sentence": "Let's cheer for our team!", "translation": "讓我們為我們的隊伍歡呼!"},
+    {"word": "choice", "pos": "n.", "meaning": "選擇", "sentence": "It's your choice.", "translation": "這是你的選擇。"},
+    
+    {"word": "choose", "pos": "v.", "meaning": "選擇", "sentence": "Choose the answer carefully.", "translation": "仔細選擇答案。"},
+    {"word": "circle", "pos": "n.", "meaning": "圓圈", "sentence": "Draw a circle on the paper.", "translation": "在紙上畫一個圓圈。"},
+    {"word": "citizen", "pos": "n.", "meaning": "公民", "sentence": "He is a good citizen.", "translation": "他是個好公民。"},
+    {"word": "classroom", "pos": "n.", "meaning": "教室", "sentence": "Our classroom is clean.", "translation": "我們的教室很乾淨。"},
+    {"word": "climate", "pos": "n.", "meaning": "氣候", "sentence": "The climate here is warm.", "translation": "這裡的氣候溫暖。"},
+    {"word": "climb", "pos": "v.", "meaning": "爬", "sentence": "Let's climb the hill.", "translation": "讓我們爬山吧。"},
+    {"word": "close", "pos": "adj.", "meaning": "接近的", "sentence": "We are close friends.", "translation": "我們是親密的朋友。"},
+    {"word": "cloud", "pos": "n.", "meaning": "雲", "sentence": "Look at that white cloud.", "translation": "看那朵白雲。"},
+    {"word": "coach", "pos": "n.", "meaning": "教練", "sentence": "Our coach is strict.", "translation": "我們的教練很嚴格。"},
+    {"word": "coast", "pos": "n.", "meaning": "海岸", "sentence": "We walked along the coast.", "translation": "我們沿著海岸走。"},
+    
+    # 第251-300個單字
+    {"word": "collect", "pos": "v.", "meaning": "收集", "sentence": "I collect stamps.", "translation": "我收集郵票。"},
+    {"word": "college", "pos": "n.", "meaning": "大學", "sentence": "She goes to college.", "translation": "她上大學。"},
+    {"word": "color", "pos": "n.", "meaning": "顏色", "sentence": "What's your favorite color?", "translation": "你最喜歡什麼顏色?"},
+    {"word": "comfortable", "pos": "adj.", "meaning": "舒適的", "sentence": "This sofa is comfortable.", "translation": "這沙發很舒適。"},
+    {"word": "common", "pos": "adj.", "meaning": "普通的", "sentence": "It's a common mistake.", "translation": "這是常見的錯誤。"},
+    {"word": "communicate", "pos": "v.", "meaning": "溝通", "sentence": "We communicate by email.", "translation": "我們透過電子郵件溝通。"},
+    {"word": "community", "pos": "n.", "meaning": "社區", "sentence": "Our community is friendly.", "translation": "我們的社區很友善。"},
+    {"word": "company", "pos": "n.", "meaning": "公司", "sentence": "He works for a big company.", "translation": "他在大公司工作。"},
+    {"word": "compare", "pos": "v.", "meaning": "比較", "sentence": "Compare these two pictures.", "translation": "比較這兩張圖片。"},
+    {"word": "compete", "pos": "v.", "meaning": "競爭", "sentence": "We compete in sports.", "translation": "我們在體育競賽中競爭。"},
+    
+    {"word": "complete", "pos": "v.", "meaning": "完成", "sentence": "I will complete this task.", "translation": "我會完成這項任務。"},
+    {"word": "computer", "pos": "n.", "meaning": "電腦", "sentence": "I use a computer every day.", "translation": "我每天使用電腦。"},
+    {"word": "concern", "pos": "n.", "meaning": "關心", "sentence": "Thank you for your concern.", "translation": "謝謝你的關心。"},
+    {"word": "condition", "pos": "n.", "meaning": "狀況", "sentence": "The car is in good condition.", "translation": "這車況很好。"},
+    {"word": "confident", "pos": "adj.", "meaning": "有信心的", "sentence": "Be confident in yourself.", "translation": "對自己要有信心。"},
+    {"word": "connect", "pos": "v.", "meaning": "連接", "sentence": "Connect to the internet.", "translation": "連接網路。"},
+    {"word": "consider", "pos": "v.", "meaning": "考慮", "sentence": "Please consider my suggestion.", "translation": "請考慮我的建議。"},
+    {"word": "contact", "pos": "v.", "meaning": "聯絡", "sentence": "Please contact me later.", "translation": "請稍後聯絡我。"},
+    {"word": "contain", "pos": "v.", "meaning": "包含", "sentence": "This box contains books.", "translation": "這個盒子裝著書。"},
+    {"word": "continue", "pos": "v.", "meaning": "繼續", "sentence": "Let's continue our work.", "translation": "讓我們繼續工作。"},
+    
+    # 第301-350個單字
+    {"word": "control", "pos": "v.", "meaning": "控制", "sentence": "Control your emotions.", "translation": "控制你的情緒。"},
+    {"word": "convenient", "pos": "adj.", "meaning": "方便的", "sentence": "This location is convenient.", "translation": "這個位置很方便。"},
+    {"word": "conversation", "pos": "n.", "meaning": "對話", "sentence": "We had a nice conversation.", "translation": "我們有個愉快的對話。"},
+    {"word": "cook", "pos": "v.", "meaning": "烹飪", "sentence": "My mom likes to cook.", "translation": "我媽媽喜歡烹飪。"},
+    {"word": "cool", "pos": "adj.", "meaning": "涼爽的", "sentence": "The weather is cool today.", "translation": "今天天氣涼爽。"},
+    {"word": "cooperate", "pos": "v.", "meaning": "合作", "sentence": "Let's cooperate together.", "translation": "讓我們一起合作。"},
+    {"word": "copy", "pos": "v.", "meaning": "複製", "sentence": "Copy this file please.", "translation": "請複製這個檔案。"},
+    {"word": "corner", "pos": "n.", "meaning": "角落", "sentence": "The shop is at the corner.", "translation": "商店在角落。"},
+    {"word": "correct", "pos": "adj.", "meaning": "正確的", "sentence": "Your answer is correct!", "translation": "你的答案是正確的!"},
+    {"word": "cost", "pos": "n.", "meaning": "花費", "sentence": "What's the cost?", "translation": "費用是多少?"},
+    
+    {"word": "country", "pos": "n.", "meaning": "國家", "sentence": "Taiwan is a beautiful country.", "translation": "台灣是個美麗的國家。"},
+    {"word": "couple", "pos": "n.", "meaning": "一對", "sentence": "A couple walked by.", "translation": "一對夫婦走過。"},
+    {"word": "courage", "pos": "n.", "meaning": "勇氣", "sentence": "You have great courage.", "translation": "你有很大的勇氣。"},
+    {"word": "course", "pos": "n.", "meaning": "課程", "sentence": "I'm taking an English course.", "translation": "我在上英語課程。"},
+    {"word": "cover", "pos": "v.", "meaning": "覆蓋", "sentence": "Cover your mouth when coughing.", "translation": "咳嗽時要掩口。"},
+    {"word": "create", "pos": "v.", "meaning": "創造", "sentence": "Artists create beautiful works.", "translation": "藝術家創造美麗的作品。"},
+    {"word": "creative", "pos": "adj.", "meaning": "有創意的", "sentence": "She is very creative.", "translation": "她很有創意。"},
+    {"word": "cross", "pos": "v.", "meaning": "穿越", "sentence": "Look both ways before crossing.", "translation": "過馬路前要左右看。"},
+    {"word": "crowd", "pos": "n.", "meaning": "人群", "sentence": "There's a big crowd here.", "translation": "這裡有一大群人。"},
+    {"word": "culture", "pos": "n.", "meaning": "文化", "sentence": "Every country has its culture.", "translation": "每個國家都有其文化。"},
+    
+    # 第351-365個單字
+    {"word": "curious", "pos": "adj.", "meaning": "好奇的", "sentence": "Children are naturally curious.", "translation": "孩子天生好奇。"},
+    {"word": "current", "pos": "adj.", "meaning": "目前的", "sentence": "What's the current situation?", "translation": "目前的情況如何?"},
+    {"word": "customer", "pos": "n.", "meaning": "顧客", "sentence": "The customer is always right.", "translation": "顧客永遠是對的。"},
+    {"word": "damage", "pos": "n.", "meaning": "損害", "sentence": "The storm caused damage.", "translation": "暴風雨造成了損害。"},
+    {"word": "danger", "pos": "n.", "meaning": "危險", "sentence": "Stay away from danger.", "translation": "遠離危險。"},
+    {"word": "dark", "pos": "adj.", "meaning": "黑暗的", "sentence": "It's dark outside.", "translation": "外面很黑。"},
+    {"word": "date", "pos": "n.", "meaning": "日期", "sentence": "What's today's date?", "translation": "今天是幾號?"},
+    {"word": "daughter", "pos": "n.", "meaning": "女兒", "sentence": "She is my daughter.", "translation": "她是我的女兒。"},
+    {"word": "decide", "pos": "v.", "meaning": "決定", "sentence": "You need to decide now.", "translation": "你現在需要決定。"},
+    {"word": "decision", "pos": "n.", "meaning": "決定", "sentence": "It's a difficult decision.", "translation": "這是個困難的決定。"},
+    
+    {"word": "declare", "pos": "v.", "meaning": "宣告", "sentence": "I declare this open!", "translation": "我宣布開幕!"},
+    {"word": "decorate", "pos": "v.", "meaning": "裝飾", "sentence": "Let's decorate the room.", "translation": "讓我們裝飾房間。"},
+    {"word": "decrease", "pos": "v.", "meaning": "減少", "sentence": "Prices will decrease soon.", "translation": "價格很快會降低。"},
+    {"word": "defeat", "pos": "v.", "meaning": "擊敗", "sentence": "We will defeat them!", "translation": "我們會擊敗他們!"},
+    {"word": "degree", "pos": "n.", "meaning": "度數", "sentence": "It's 30 degrees today.", "translation": "今天30度。"},
 ]
 
-# 擴充到365天 (重複使用現有單字並加入更多)
+# 生成完整年度單字列表 (現在有365個不重複單字)
 def generate_full_year_words():
-    """生成365天的單字列表"""
-    additional_words = [
-        {"word": "ability", "pos": "n.", "meaning": "能力", "sentence": "She has the ability to succeed.", "translation": "她有成功的能力。"},
-        {"word": "activity", "pos": "n.", "meaning": "活動", "sentence": "Swimming is my favorite activity.", "translation": "游泳是我最喜歡的活動。"},
-        {"word": "agreement", "pos": "n.", "meaning": "同意", "sentence": "We reached an agreement.", "translation": "我們達成了協議。"},
-        {"word": "already", "pos": "adv.", "meaning": "已經", "sentence": "I have already finished my homework.", "translation": "我已經完成作業了。"},
-        {"word": "amazing", "pos": "adj.", "meaning": "驚人的", "sentence": "The view is amazing!", "translation": "風景太驚人了!"},
-        {"word": "ancient", "pos": "adj.", "meaning": "古老的", "sentence": "We visited an ancient temple.", "translation": "我們參觀了一座古老的寺廟。"},
-        {"word": "another", "pos": "adj.", "meaning": "另一個", "sentence": "Can I have another cookie?", "translation": "我可以再吃一塊餅乾嗎?"},
-        {"word": "answer", "pos": "n.", "meaning": "答案", "sentence": "What's the answer to this question?", "translation": "這個問題的答案是什麼?"},
-        {"word": "anybody", "pos": "pron.", "meaning": "任何人", "sentence": "Is anybody home?", "translation": "有人在家嗎?"},
-        {"word": "appear", "pos": "v.", "meaning": "出現", "sentence": "Stars appear at night.", "translation": "星星在夜晚出現。"},
-        # ... 持續添加到315個
-    ]
-    
-    # 合併基礎單字和額外單字
-    all_words = DAILY_WORDS.copy()
-    
-    # 如果不足365個，循環使用
-    while len(all_words) < 365:
-        remaining = 365 - len(all_words)
-        if remaining >= len(DAILY_WORDS):
-            all_words.extend(DAILY_WORDS)
-        else:
-            all_words.extend(DAILY_WORDS[:remaining])
-    
-    return all_words[:365]
+    """直接返回365天的單字列表"""
+    return DAILY_WORDS
 
 # 生成完整年度單字
 FULL_YEAR_WORDS = generate_full_year_words()
