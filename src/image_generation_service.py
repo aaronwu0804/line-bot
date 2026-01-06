@@ -24,10 +24,10 @@ def generate_image_with_gemini(prompt: str) -> Optional[str]:
     try:
         import google.generativeai as genai
         
-        # 初始化 Gemini API
-        api_key = os.getenv('GEMINI_API_KEY')
+        # 初始化 Gemini API - 支援兩種環境變數名稱
+        api_key = os.getenv('GEMINI_API_KEY') or os.getenv('GEMINI_KEY')
         if not api_key:
-            logger.error("未設定 GEMINI_API_KEY 環境變數")
+            logger.error("未設定 GEMINI_API_KEY 或 GEMINI_KEY 環境變數")
             return None
             
         genai.configure(api_key=api_key)
