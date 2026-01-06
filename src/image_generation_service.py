@@ -24,23 +24,101 @@ def generate_image_with_gemini(prompt: str) -> Optional[str]:
     try:
         logger.info(f"開始生成圖片，提示詞: {prompt[:50]}...")
         
-        # 使用 fal.ai 的 FLUX schnell 模型 (免費且快速)
-        import json
+        # 優先嘗試使用 Replicate (高品質 FLUX 模型)
+        image_url = generate_with_replicate(prompt)
+        if image_url:
+            return image_url
         
-        api_url = "https://fal.run/fal-ai/flux/schnell"
+        # 備用方案: 使用 Segmind SDXL
+        logger.info("嘗試備用服務 Segmind...")
+        image_url = generate_with_segmind(prompt)
+        if image_url:
+            return image_url
+        
+        # 最後備用: Pollinations + Imgur
+        logger.info("嘗試最終備用服務 Pollinations...")
+        return generate_with_pollinations(prompt)
+            
+    except Exception as e:
+        logger.error(f"生成圖片時發生錯誤: {str(e)}")
+        return None
+
+
+def generate_with_replicate(prompt: str) -> Optional[str]:
+    """
+    使用 Replicate API 生成高品質圖片 (FLUX schnell)
+    """
+    try:
+        # Replicate 的公開預測 API
+        api_url = "https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions"
         
         payload = {
-            "prompt": prompt,
-            "image_size": "square",
-            "num_inference_steps": 4,
-            "num_images": 1
+            "input": {
+                "prompt": prompt,
+                "num_outputs": 1,
+                "aspect_ratio": "1:1",
+                "output_format": "jpg",
+                "output_quality": 90
+            }
         }
         
         headers = {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "Prefer": "wait"  # 等待結果返回
         }
         
-        logger.info(f"發送請求到 fal.ai...")
+        logger.info("發送請求到 Replicate...")
+        
+        response = requests.post(
+            api_url,
+            headers=headers,
+            json=payload,
+            timeout=60
+        )
+        
+        if response.status_code in [200, 201]:
+            result = response.json()
+            
+            # 獲取圖片 URL
+            if 'output' in result and result['output']:
+                image_url = result['output'][0] if isinstance(result['output'], list) else result['output']
+                logger.info(f"Replicate 生成成功: {image_url}")
+                return image_url
+        
+        logger.warning(f"Replicate API 失敗: {response.status_code}")
+        return None
+        
+    except Exception as e:
+        logger.error(f"Replicate 生成失敗: {str(e)}")
+        return None
+
+
+def generate_with_segmind(prompt: str) -> Optional[str]:
+    """
+    使用 Segmind API 生成圖片 (SDXL)
+    """
+    try:
+        api_url = "https://api.segmind.com/v1/sdxl1.0-txt2img"
+        
+        payload = {
+            "prompt": prompt,
+            "negative_prompt": "ugly, blurry, low quality",
+            "samples": 1,
+            "scheduler": "UniPC",
+            "num_inference_steps": 25,
+            "guidance_scale": 7.5,
+            "seed": -1,
+            "img_width": 1024,
+            "img_height": 1024,
+            "base64": False
+        }
+        
+        headers = {
+            "Content-Type": "application/json",
+            "x-api-key": "free"  # 免費額度
+        }
+        
+        logger.info("發送請求到 Segmind...")
         
         response = requests.post(
             api_url,
@@ -50,30 +128,18 @@ def generate_image_with_gemini(prompt: str) -> Optional[str]:
         )
         
         if response.status_code == 200:
-            result = response.json()
-            
-            # 從回應中獲取圖片 URL
-            if 'images' in result and len(result['images']) > 0:
-                image_url = result['images'][0]['url']
-                logger.info(f"圖片生成成功: {image_url}")
-                return image_url
-            else:
-                logger.error(f"API 回應格式異常: {result}")
-                return None
-        else:
-            logger.error(f"API 請求失敗: {response.status_code} - {response.text}")
-            
-            # 如果 fal.ai 失敗，回退到 Pollinations
-            logger.info("嘗試使用備用服務 Pollinations...")
-            return generate_with_pollinations(prompt)
-            
+            # Segmind 直接返回圖片數據，上傳到 Imgur
+            imgur_url = upload_image_to_imgur_from_bytes(response.content)
+            if imgur_url:
+                logger.info(f"Segmind 生成成功，已上傳到 Imgur: {imgur_url}")
+                return imgur_url
+        
+        logger.warning(f"Segmind API 失敗: {response.status_code}")
+        return None
+        
     except Exception as e:
-        logger.error(f"生成圖片時發生錯誤: {str(e)}")
-        # 發生錯誤時使用備用方案
-        try:
-            return generate_with_pollinations(prompt)
-        except:
-            return None
+        logger.error(f"Segmind 生成失敗: {str(e)}")
+        return None
 
 
 def generate_with_pollinations(prompt: str) -> Optional[str]:
