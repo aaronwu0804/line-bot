@@ -837,43 +837,31 @@ def handle_message(event):
                 )
             
             # 生成圖片
-            from src.image_generation_service import generate_image_with_gemini, upload_image_to_imgur
+            from src.image_generation_service import generate_image_with_gemini
             
             logger.info(f"開始生成圖片，提示詞: {prompt}")
-            image_path = generate_image_with_gemini(prompt)
+            image_url = generate_image_with_gemini(prompt)
             
-            if image_path:
-                # 嘗試上傳到 Imgur
-                image_url = upload_image_to_imgur(image_path)
-                
+            if image_url:
                 # 推送圖片訊息給用戶
                 with ApiClient(configuration) as api_client:
                     line_bot_api = MessagingApi(api_client)
                     
-                    if image_url:
-                        # 如果成功上傳到 Imgur，發送圖片訊息
-                        line_bot_api.push_message(
-                            PushMessageRequest(
-                                to=user_id,
-                                messages=[
-                                    TextMessage(text=f"✅ 圖片生成成功！\n描述：{prompt}"),
-                                    ImageMessage(
-                                        original_content_url=image_url,
-                                        preview_image_url=image_url
-                                    )
-                                ]
-                            )
+                    # 直接發送圖片訊息
+                    line_bot_api.push_message(
+                        PushMessageRequest(
+                            to=user_id,
+                            messages=[
+                                TextMessage(text=f"✅ 圖片生成成功！\n描述：{prompt}"),
+                                ImageMessage(
+                                    original_content_url=image_url,
+                                    preview_image_url=image_url
+                                )
+                            ]
                         )
-                    else:
-                        # 如果無法上傳，只發送文字訊息
-                        line_bot_api.push_message(
-                            PushMessageRequest(
-                                to=user_id,
-                                messages=[TextMessage(text=f"✅ 圖片已生成！但無法上傳到雲端\n本地路徑：{image_path}\n\n提示：設定 IMGUR_CLIENT_ID 環境變數可啟用圖片上傳功能")]
-                            )
-                        )
+                    )
                 
-                logger.info(f"圖片生成成功: {image_url or image_path}")
+                logger.info(f"圖片生成成功: {image_url}")
             else:
                 # 生成失敗
                 with ApiClient(configuration) as api_client:
@@ -881,7 +869,7 @@ def handle_message(event):
                     line_bot_api.push_message(
                         PushMessageRequest(
                             to=user_id,
-                            messages=[TextMessage(text="❌ 圖片生成失敗，請稍後再試\n\n可能原因：\n1. API 配額已用完\n2. 提示詞包含不當內容\n3. 服務暫時不可用")]
+                            messages=[TextMessage(text="❌ 圖片生成失敗，請稍後再試\n\n可能原因：\n1. 網路連線問題\n2. 提示詞包含不當內容\n3. 服務暫時不可用")]
                         )
                     )
             

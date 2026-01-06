@@ -19,44 +19,29 @@ def generate_image_with_gemini(prompt: str) -> Optional[str]:
         prompt: 圖片描述提示詞
         
     Returns:
-        圖片本地路徑 或 None
+        圖片 URL (直接可用於 LINE)
     """
     try:
         # 使用 Pollinations AI 免費圖片生成 API
         # 這是一個簡單且可靠的免費服務，無需 API key
         logger.info(f"開始生成圖片，提示詞: {prompt[:50]}...")
         
-        # Pollinations API - 直接返回圖片
+        # Pollinations API - 直接返回圖片 URL
         import urllib.parse
         encoded_prompt = urllib.parse.quote(prompt)
-        api_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}"
         
-        # 添加參數以提升品質
-        api_url += "?width=1024&height=1024&nologo=true"
+        # 直接返回圖片 URL,無需下載
+        image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&nologo=true"
         
-        logger.info(f"請求 URL: {api_url[:100]}...")
+        logger.info(f"圖片 URL 已生成: {image_url[:100]}...")
         
-        # 發送請求
-        response = requests.get(api_url, timeout=60)
-        
+        # 驗證 URL 是否可訪問
+        response = requests.head(image_url, timeout=10)
         if response.status_code == 200:
-            # 保存圖片到臨時目錄
-            temp_dir = os.path.join(os.path.dirname(__file__), '..', 'temp')
-            os.makedirs(temp_dir, exist_ok=True)
-            
-            import time
-            timestamp = int(time.time())
-            image_filename = f"generated_{timestamp}.png"
-            image_path = os.path.join(temp_dir, image_filename)
-            
-            # 保存圖片
-            with open(image_path, 'wb') as f:
-                f.write(response.content)
-            
-            logger.info(f"圖片已生成並保存到: {image_path}")
-            return image_path
+            logger.info(f"圖片生成成功，URL 可訪問")
+            return image_url
         else:
-            logger.error(f"API 請求失敗: {response.status_code}")
+            logger.error(f"圖片 URL 無法訪問: {response.status_code}")
             return None
             
     except Exception as e:
