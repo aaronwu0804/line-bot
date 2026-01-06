@@ -18,7 +18,7 @@ from flask import Flask, request, abort, jsonify
 from linebot.v3 import WebhookHandler
 from linebot.v3.exceptions import InvalidSignatureError
 from linebot.v3.messaging import (
-    Configuration, ApiClient, MessagingApi, ReplyMessageRequest, TextMessage
+    Configuration, ApiClient, MessagingApi, ReplyMessageRequest, PushMessageRequest, TextMessage, ImageMessage
 )
 from linebot.v3.webhooks import MessageEvent, TextMessageContent
 
@@ -808,6 +808,96 @@ def handle_message(event):
     reply_token = event.reply_token
     
     logger.info("用戶 %s 發送訊息: %s", user_id, user_message)
+    
+    # 檢查是否為「生成圖片」指令
+    if user_message.strip().startswith('生成圖片'):
+        try:
+            # 提取圖片描述提示詞
+            prompt = user_message.strip()[4:].strip()  # 移除「生成圖片」四個字
+            
+            if not prompt:
+                with ApiClient(configuration) as api_client:
+                    line_bot_api = MessagingApi(api_client)
+                    line_bot_api.reply_message(
+                        ReplyMessageRequest(
+                            reply_token=reply_token,
+                            messages=[TextMessage(text="請提供圖片描述！\n\n使用方式：\n生成圖片 一隻可愛的貓咪在玩毛線球")]
+                        )
+                    )
+                return
+            
+            # 先回覆「正在生成」訊息
+            with ApiClient(configuration) as api_client:
+                line_bot_api = MessagingApi(api_client)
+                line_bot_api.reply_message(
+                    ReplyMessageRequest(
+                        reply_token=reply_token,
+                        messages=[TextMessage(text=f"🎨 正在為您生成圖片...\n描述：{prompt}\n\n請稍候約10-20秒")]
+                    )
+                )
+            
+            # 生成圖片
+            from src.image_generation_service import generate_image_with_gemini, upload_image_to_imgur
+            
+            logger.info(f"開始生成圖片，提示詞: {prompt}")
+            image_path = generate_image_with_gemini(prompt)
+            
+            if image_path:
+                # 嘗試上傳到 Imgur
+                image_url = upload_image_to_imgur(image_path)
+                
+                # 推送圖片訊息給用戶
+                with ApiClient(configuration) as api_client:
+                    line_bot_api = MessagingApi(api_client)
+                    
+                    if image_url:
+                        # 如果成功上傳到 Imgur，發送圖片訊息
+                        line_bot_api.push_message(
+                            PushMessageRequest(
+                                to=user_id,
+                                messages=[
+                                    TextMessage(text=f"✅ 圖片生成成功！\n描述：{prompt}"),
+                                    ImageMessage(
+                                        original_content_url=image_url,
+                                        preview_image_url=image_url
+                                    )
+                                ]
+                            )
+                        )
+                    else:
+                        # 如果無法上傳，只發送文字訊息
+                        line_bot_api.push_message(
+                            PushMessageRequest(
+                                to=user_id,
+                                messages=[TextMessage(text=f"✅ 圖片已生成！但無法上傳到雲端\n本地路徑：{image_path}\n\n提示：設定 IMGUR_CLIENT_ID 環境變數可啟用圖片上傳功能")]
+                            )
+                        )
+                
+                logger.info(f"圖片生成成功: {image_url or image_path}")
+            else:
+                # 生成失敗
+                with ApiClient(configuration) as api_client:
+                    line_bot_api = MessagingApi(api_client)
+                    line_bot_api.push_message(
+                        PushMessageRequest(
+                            to=user_id,
+                            messages=[TextMessage(text="❌ 圖片生成失敗，請稍後再試\n\n可能原因：\n1. API 配額已用完\n2. 提示詞包含不當內容\n3. 服務暫時不可用")]
+                        )
+                    )
+            
+            return
+            
+        except Exception as e:
+            logger.error(f"處理圖片生成時出錯: {str(e)}")
+            with ApiClient(configuration) as api_client:
+                line_bot_api = MessagingApi(api_client)
+                line_bot_api.push_message(
+                    PushMessageRequest(
+                        to=user_id,
+                        messages=[TextMessage(text=f"❌ 處理圖片生成時發生錯誤：{str(e)}")]
+                    )
+                )
+            return
     
     # 檢查是否為「每日單字」指令
     if user_message.strip() in ['每日單字', '每日英語', 'Daily English', 'daily english', '單字']:
