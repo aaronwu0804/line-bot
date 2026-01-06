@@ -77,8 +77,11 @@ def get_gemini_response(prompt, conversation_history=None, max_retries=5, retry_
     safe_prompt = prompt[:20] + "..." if len(prompt) > 20 else prompt
     logger.info(f"處理提示: '{safe_prompt}'，歷史記錄長度: {len(conversation_history) if conversation_history else 0}")
     
-    # 可供使用的模型列表，按優先順序排列 (使用 Gemini 2.5 Pro 權限)
-    models = ['gemini-2.5-flash', 'gemini-2.0-flash-exp', 'gemini-1.5-pro', 'gemini-1.0-pro', 'gemini-pro']
+    # 可供使用的模型列表，按優先順序排列 (2026年最新版本)
+    # gemini-2.0-flash-exp: 最新實驗版本,速度快,成本低
+    # gemini-1.5-pro: 穩定版本,支援長上下文
+    # gemini-1.5-flash: 快速版本,適合即時對話
+    models = ['gemini-2.0-flash-exp', 'gemini-1.5-flash', 'gemini-1.5-pro']
     
     # 如果啟用了流量限制器，使用流量限制器執行 API 請求
     if USE_RATE_LIMITER:
