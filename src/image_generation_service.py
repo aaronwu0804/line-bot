@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 def generate_image_with_gemini(prompt: str) -> Optional[str]:
     """
-    使用 Stable Diffusion 生成圖片 (透過 Hugging Face API)
+    使用圖片生成 API 生成圖片
     
     Args:
         prompt: 圖片描述提示詞
@@ -22,43 +22,22 @@ def generate_image_with_gemini(prompt: str) -> Optional[str]:
         圖片本地路徑 或 None
     """
     try:
-        # 使用 Hugging Face 的 Stable Diffusion API
-        hf_token = os.getenv('HUGGINGFACE_TOKEN')
-        
-        # 使用新的 Hugging Face 推理端點
-        api_url = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
-        
-        headers = {}
-        if hf_token:
-            headers["Authorization"] = f"Bearer {hf_token}"
-            logger.info("使用 Hugging Face Token")
-        else:
-            logger.info("使用 Hugging Face 公開推理 API")
-        
+        # 使用 Pollinations AI 免費圖片生成 API
+        # 這是一個簡單且可靠的免費服務，無需 API key
         logger.info(f"開始生成圖片，提示詞: {prompt[:50]}...")
         
-        # 發送請求
-        response = requests.post(
-            api_url,
-            headers=headers,
-            json={"inputs": prompt},
-            timeout=60
-        )
+        # Pollinations API - 直接返回圖片
+        import urllib.parse
+        encoded_prompt = urllib.parse.quote(prompt)
+        api_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}"
         
-        # 如果 API 返回 410 或其他錯誤，嘗試使用備用端點
-        if response.status_code == 410 or response.status_code >= 400:
-            logger.warning(f"主要端點失敗 ({response.status_code}): {response.text}")
-            logger.info("嘗試使用 Black Forest Labs FLUX 模型")
-            
-            # 使用更新且免費的 FLUX 模型
-            api_url = "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell"
-            
-            response = requests.post(
-                api_url,
-                headers=headers,
-                json={"inputs": prompt},
-                timeout=60
-            )
+        # 添加參數以提升品質
+        api_url += "?width=1024&height=1024&nologo=true"
+        
+        logger.info(f"請求 URL: {api_url[:100]}...")
+        
+        # 發送請求
+        response = requests.get(api_url, timeout=60)
         
         if response.status_code == 200:
             # 保存圖片到臨時目錄
@@ -77,7 +56,7 @@ def generate_image_with_gemini(prompt: str) -> Optional[str]:
             logger.info(f"圖片已生成並保存到: {image_path}")
             return image_path
         else:
-            logger.error(f"API 請求失敗: {response.status_code} - {response.text}")
+            logger.error(f"API 請求失敗: {response.status_code}")
             return None
             
     except Exception as e:
