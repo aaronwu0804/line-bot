@@ -13,13 +13,13 @@ logger = logging.getLogger(__name__)
 
 def generate_image_with_gemini(prompt: str) -> Optional[str]:
     """
-    使用圖片生成 API 生成圖片
+    使用圖片生成 API 生成圖片並上傳到 Imgur
     
     Args:
         prompt: 圖片描述提示詞
         
     Returns:
-        圖片 URL (直接可用於 LINE)
+        Imgur 圖片 URL 或 None
     """
     try:
         # 使用 Pollinations AI 免費圖片生成 API
@@ -27,44 +27,79 @@ def generate_image_with_gemini(prompt: str) -> Optional[str]:
         
         import urllib.parse
         
-        # 縮短提示詞以避免 URL 過長 (LINE 限制 2000 字元)
-        # 如果提示詞太長，截斷並添加省略號
+        # 縮短提示詞
         max_prompt_length = 100
         if len(prompt) > max_prompt_length:
             prompt = prompt[:max_prompt_length]
             logger.info(f"提示詞過長，已截斷為: {prompt}")
         
         encoded_prompt = urllib.parse.quote(prompt)
-        
-        # 使用較短的 URL 格式
-        # 不添加 width/height 參數以縮短 URL
         image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}"
         
-        logger.info(f"生成的圖片 URL 長度: {len(image_url)} 字元")
+        logger.info(f"請求圖片生成: {image_url[:100]}...")
         
-        # 檢查 URL 長度
-        if len(image_url) > 2000:
-            logger.error(f"URL 過長 ({len(image_url)} > 2000)，無法發送到 LINE")
-            return None
+        # 下載生成的圖片 (等待生成完成)
+        response = requests.get(image_url, timeout=60)
         
-        logger.info(f"圖片 URL 已生成: {image_url[:100]}...")
-        
-        # 驗證 URL 是否可訪問
-        try:
-            response = requests.head(image_url, timeout=10)
-            if response.status_code == 200:
-                logger.info(f"圖片生成成功，URL 可訪問")
-                return image_url
+        if response.status_code == 200:
+            logger.info(f"圖片下載成功，大小: {len(response.content)} bytes")
+            
+            # 上傳到 Imgur
+            imgur_url = upload_image_to_imgur_from_bytes(response.content)
+            
+            if imgur_url:
+                logger.info(f"圖片已上傳到 Imgur: {imgur_url}")
+                return imgur_url
             else:
-                logger.warning(f"圖片 URL 返回狀態碼: {response.status_code}")
-                # 即使返回非 200，也嘗試返回 URL (Pollinations 可能在生成中)
-                return image_url
-        except Exception as e:
-            logger.warning(f"驗證 URL 時發生錯誤: {str(e)}，仍返回 URL")
-            return image_url
+                logger.error("上傳到 Imgur 失敗")
+                return None
+        else:
+            logger.error(f"圖片生成失敗: {response.status_code}")
+            return None
             
     except Exception as e:
         logger.error(f"生成圖片時發生錯誤: {str(e)}")
+        return None
+
+
+def upload_image_to_imgur_from_bytes(image_data: bytes) -> Optional[str]:
+    """
+    上傳圖片數據到 Imgur
+    
+    Args:
+        image_data: 圖片二進制數據
+        
+    Returns:
+        Imgur 圖片 URL 或 None
+    """
+    try:
+        # 使用匿名上傳 (不需要 Client ID)
+        import base64
+        
+        # 將圖片數據轉為 base64
+        image_b64 = base64.b64encode(image_data).decode('utf-8')
+        
+        # 使用 Imgur 的匿名上傳 API
+        headers = {'Authorization': 'Client-ID 546c25a59c58ad7'}  # 公開的匿名 Client ID
+        
+        response = requests.post(
+            'https://api.imgur.com/3/image',
+            headers=headers,
+            data={'image': image_b64},
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            image_url = data['data']['link']
+            logger.info(f"圖片已上傳到 Imgur: {image_url}")
+            return image_url
+        else:
+            logger.error(f"上傳到 Imgur 失敗: {response.status_code} - {response.text}")
+            return None
+            
+    except Exception as e:
+        logger.error(f"上傳圖片到 Imgur 時發生錯誤: {str(e)}")
         return None
 
 
