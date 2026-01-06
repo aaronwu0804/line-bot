@@ -32,13 +32,12 @@ def generate_image_with_gemini(prompt: str) -> Optional[str]:
             
         genai.configure(api_key=api_key)
         
-        # 使用 Imagen 3 模型
-        model = genai.GenerativeModel('imagen-3.0-generate-001')
-        
         logger.info(f"開始生成圖片，提示詞: {prompt[:50]}...")
         
-        # 生成圖片
-        response = model.generate_images(
+        # 使用 imagen-3.0-generate-001 模型生成圖片
+        # 注意: 這是通過 genai.ImageGenerationModel 而不是 GenerativeModel
+        result = genai.ImageGenerationModel.generate_images(
+            model='imagen-3.0-generate-001',
             prompt=prompt,
             number_of_images=1,
             safety_filter_level="block_only_high",
@@ -47,8 +46,8 @@ def generate_image_with_gemini(prompt: str) -> Optional[str]:
         )
         
         # 獲取圖片
-        if response.images:
-            image = response.images[0]
+        if result and len(result.images) > 0:
+            image = result.images[0]
             
             # 將圖片保存到臨時文件
             temp_dir = os.path.join(os.path.dirname(__file__), '..', 'temp')
