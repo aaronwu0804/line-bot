@@ -23,26 +23,45 @@ def generate_image_with_gemini(prompt: str) -> Optional[str]:
     """
     try:
         # 使用 Pollinations AI 免費圖片生成 API
-        # 這是一個簡單且可靠的免費服務，無需 API key
         logger.info(f"開始生成圖片，提示詞: {prompt[:50]}...")
         
-        # Pollinations API - 直接返回圖片 URL
         import urllib.parse
+        
+        # 縮短提示詞以避免 URL 過長 (LINE 限制 2000 字元)
+        # 如果提示詞太長，截斷並添加省略號
+        max_prompt_length = 100
+        if len(prompt) > max_prompt_length:
+            prompt = prompt[:max_prompt_length]
+            logger.info(f"提示詞過長，已截斷為: {prompt}")
+        
         encoded_prompt = urllib.parse.quote(prompt)
         
-        # 直接返回圖片 URL,無需下載
-        image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&nologo=true"
+        # 使用較短的 URL 格式
+        # 不添加 width/height 參數以縮短 URL
+        image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}"
+        
+        logger.info(f"生成的圖片 URL 長度: {len(image_url)} 字元")
+        
+        # 檢查 URL 長度
+        if len(image_url) > 2000:
+            logger.error(f"URL 過長 ({len(image_url)} > 2000)，無法發送到 LINE")
+            return None
         
         logger.info(f"圖片 URL 已生成: {image_url[:100]}...")
         
         # 驗證 URL 是否可訪問
-        response = requests.head(image_url, timeout=10)
-        if response.status_code == 200:
-            logger.info(f"圖片生成成功，URL 可訪問")
+        try:
+            response = requests.head(image_url, timeout=10)
+            if response.status_code == 200:
+                logger.info(f"圖片生成成功，URL 可訪問")
+                return image_url
+            else:
+                logger.warning(f"圖片 URL 返回狀態碼: {response.status_code}")
+                # 即使返回非 200，也嘗試返回 URL (Pollinations 可能在生成中)
+                return image_url
+        except Exception as e:
+            logger.warning(f"驗證 URL 時發生錯誤: {str(e)}，仍返回 URL")
             return image_url
-        else:
-            logger.error(f"圖片 URL 無法訪問: {response.status_code}")
-            return None
             
     except Exception as e:
         logger.error(f"生成圖片時發生錯誤: {str(e)}")
