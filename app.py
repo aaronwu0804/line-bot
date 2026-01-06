@@ -832,7 +832,7 @@ def handle_message(event):
                 line_bot_api.reply_message(
                     ReplyMessageRequest(
                         reply_token=reply_token,
-                        messages=[TextMessage(text=f"🎨 正在為您生成圖片...\n描述：{prompt}\n\n請稍候約10-20秒")]
+                        messages=[TextMessage(text=f"🎨 正在為您生成圖片...\n描述：{prompt}\n\n使用 Stable Diffusion XL 模型\n請稍候約20-30秒")]
                     )
                 )
             

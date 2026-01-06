@@ -13,43 +13,40 @@ logger = logging.getLogger(__name__)
 
 def generate_image_with_gemini(prompt: str) -> Optional[str]:
     """
-    使用 Gemini Imagen 3 生成圖片
+    使用 Stable Diffusion 生成圖片 (透過 Hugging Face API)
     
     Args:
         prompt: 圖片描述提示詞
         
     Returns:
-        圖片 URL 或 None
+        圖片本地路徑 或 None
     """
     try:
-        import google.generativeai as genai
+        # 使用 Hugging Face 的 Stable Diffusion API
+        hf_token = os.getenv('HUGGINGFACE_TOKEN')
         
-        # 初始化 Gemini API - 支援兩種環境變數名稱
-        api_key = os.getenv('GEMINI_API_KEY') or os.getenv('GEMINI_KEY')
-        if not api_key:
-            logger.error("未設定 GEMINI_API_KEY 或 GEMINI_KEY 環境變數")
-            return None
-            
-        genai.configure(api_key=api_key)
+        # 如果沒有 HF token，使用公開的推理 API
+        api_url = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
+        
+        headers = {}
+        if hf_token:
+            headers["Authorization"] = f"Bearer {hf_token}"
+            logger.info("使用 Hugging Face Token")
+        else:
+            logger.info("使用 Hugging Face 公開推理 API")
         
         logger.info(f"開始生成圖片，提示詞: {prompt[:50]}...")
         
-        # 使用 imagen-3.0-generate-001 模型生成圖片
-        # 注意: 這是通過 genai.ImageGenerationModel 而不是 GenerativeModel
-        result = genai.ImageGenerationModel.generate_images(
-            model='imagen-3.0-generate-001',
-            prompt=prompt,
-            number_of_images=1,
-            safety_filter_level="block_only_high",
-            person_generation="allow_adult",
-            aspect_ratio="1:1"
+        # 發送請求
+        response = requests.post(
+            api_url,
+            headers=headers,
+            json={"inputs": prompt},
+            timeout=60
         )
         
-        # 獲取圖片
-        if result and len(result.images) > 0:
-            image = result.images[0]
-            
-            # 將圖片保存到臨時文件
+        if response.status_code == 200:
+            # 保存圖片到臨時目錄
             temp_dir = os.path.join(os.path.dirname(__file__), '..', 'temp')
             os.makedirs(temp_dir, exist_ok=True)
             
@@ -59,12 +56,13 @@ def generate_image_with_gemini(prompt: str) -> Optional[str]:
             image_path = os.path.join(temp_dir, image_filename)
             
             # 保存圖片
-            image._pil_image.save(image_path)
-            logger.info(f"圖片已保存到: {image_path}")
+            with open(image_path, 'wb') as f:
+                f.write(response.content)
             
+            logger.info(f"圖片已生成並保存到: {image_path}")
             return image_path
         else:
-            logger.error("API 返回但沒有生成圖片")
+            logger.error(f"API 請求失敗: {response.status_code} - {response.text}")
             return None
             
     except Exception as e:
