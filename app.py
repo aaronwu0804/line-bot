@@ -807,7 +807,17 @@ def handle_message(event):
     user_message = event.message.text
     reply_token = event.reply_token
     
-    logger.info("用戶 %s 發送訊息: %s", user_id, user_message)
+    # 獲取訊息來源 (可能是群組、聊天室或個人)
+    source_type = event.source.type
+    if source_type == 'group':
+        chat_id = event.source.group_id
+        logger.info("群組 %s 中的用戶 %s 發送訊息: %s", chat_id, user_id, user_message)
+    elif source_type == 'room':
+        chat_id = event.source.room_id
+        logger.info("聊天室 %s 中的用戶 %s 發送訊息: %s", chat_id, user_id, user_message)
+    else:
+        chat_id = user_id
+        logger.info("用戶 %s 發送訊息: %s", user_id, user_message)
     
     # 檢查是否為「生成圖片」指令
     if user_message.strip().startswith('生成圖片'):
@@ -843,14 +853,14 @@ def handle_message(event):
             image_url = generate_image_with_gemini(prompt)
             
             if image_url:
-                # 推送圖片訊息給用戶
+                # 推送圖片訊息到原訊息來源 (群組或個人)
                 with ApiClient(configuration) as api_client:
                     line_bot_api = MessagingApi(api_client)
                     
-                    # 直接發送圖片訊息
+                    # 直接發送圖片訊息到訊息來源
                     line_bot_api.push_message(
                         PushMessageRequest(
-                            to=user_id,
+                            to=chat_id,
                             messages=[
                                 TextMessage(text=f"✅ 圖片生成成功！\n描述：{prompt}"),
                                 ImageMessage(
@@ -861,14 +871,14 @@ def handle_message(event):
                         )
                     )
                 
-                logger.info(f"圖片生成成功: {image_url}")
+                logger.info(f"圖片生成成功並發送到: {chat_id}")
             else:
                 # 生成失敗
                 with ApiClient(configuration) as api_client:
                     line_bot_api = MessagingApi(api_client)
                     line_bot_api.push_message(
                         PushMessageRequest(
-                            to=user_id,
+                            to=chat_id,
                             messages=[TextMessage(text="❌ 圖片生成失敗，請稍後再試\n\n可能原因：\n1. 網路連線問題\n2. 提示詞包含不當內容\n3. 服務暫時不可用")]
                         )
                     )
@@ -881,7 +891,7 @@ def handle_message(event):
                 line_bot_api = MessagingApi(api_client)
                 line_bot_api.push_message(
                     PushMessageRequest(
-                        to=user_id,
+                        to=chat_id,
                         messages=[TextMessage(text=f"❌ 處理圖片生成時發生錯誤：{str(e)}")]
                     )
                 )
