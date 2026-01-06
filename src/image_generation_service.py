@@ -25,7 +25,7 @@ def generate_image_with_gemini(prompt: str) -> Optional[str]:
         # 使用 Hugging Face 的 Stable Diffusion API
         hf_token = os.getenv('HUGGINGFACE_TOKEN')
         
-        # 如果沒有 HF token，使用公開的推理 API
+        # 使用新的 Hugging Face 推理端點
         api_url = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
         
         headers = {}
@@ -44,6 +44,21 @@ def generate_image_with_gemini(prompt: str) -> Optional[str]:
             json={"inputs": prompt},
             timeout=60
         )
+        
+        # 如果 API 返回 410 或其他錯誤，嘗試使用備用端點
+        if response.status_code == 410 or response.status_code >= 400:
+            logger.warning(f"主要端點失敗 ({response.status_code}): {response.text}")
+            logger.info("嘗試使用 Black Forest Labs FLUX 模型")
+            
+            # 使用更新且免費的 FLUX 模型
+            api_url = "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell"
+            
+            response = requests.post(
+                api_url,
+                headers=headers,
+                json={"inputs": prompt},
+                timeout=60
+            )
         
         if response.status_code == 200:
             # 保存圖片到臨時目錄
