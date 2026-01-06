@@ -253,7 +253,10 @@ def get_daily_word() -> Dict:
 
 def format_daily_english_message(word_data: Dict) -> str:
     """格式化每日英語訊息"""
-    message = f"""📚 每日英語 Daily English
+    day = get_day_of_year()
+    word_number = ((day - 1) % 365) + 1
+    
+    message = f"""📚 每日英語 Daily English (第{word_number}個單字)
 
 🔤 單字 Word
 {word_data['word']} ({word_data['pos']})
