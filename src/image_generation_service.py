@@ -24,15 +24,21 @@ def generate_image_with_gemini(prompt: str) -> Optional[str]:
     try:
         logger.info(f"開始生成圖片，提示詞: {prompt[:50]}...")
         
-        # 優先使用 Segmind SDXL (無需認證,品質好)
-        logger.info("使用 Segmind SDXL 生成圖片...")
-        image_url = generate_with_segmind(prompt)
+        # 優先使用 Hugging Face Inference API (免費,高品質)
+        logger.info("使用 Hugging Face Inference API...")
+        image_url = generate_with_huggingface(prompt)
         if image_url:
             return image_url
         
-        # 備用方案: Replicate
-        logger.info("Segmind 失敗，嘗試 Replicate...")
-        image_url = generate_with_replicate(prompt)
+        # 備用方案: Craiyon (免費無需認證)
+        logger.info("Hugging Face 失敗,嘗試 Craiyon...")
+        image_url = generate_with_craiyon(prompt)
+        if image_url:
+            return image_url
+        
+        # 最後備用: Pollinations
+        logger.info("Craiyon 失敗,嘗試 Pollinations...")
+        image_url = generate_with_pollinations(prompt)
         if image_url:
             return image_url
         
@@ -142,6 +148,130 @@ def generate_with_segmind(prompt: str) -> Optional[str]:
         return None
 
 
+def generate_with_huggingface(prompt: str) -> Optional[str]:
+    """
+    使用 Hugging Face Inference API 生成圖片
+    使用 stable-diffusion-xl-base-1.0 模型
+    """
+    try:
+        api_url = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
+        
+        headers = {
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "inputs": prompt,
+            "parameters": {
+                "num_inference_steps": 30,
+                "guidance_scale": 7.5
+            }
+        }
+        
+        logger.info("發送請求到 Hugging Face...")
+        
+        response = requests.post(
+            api_url,
+            headers=headers,
+            json=payload,
+            timeout=60
+        )
+        
+        if response.status_code == 200:
+            # Hugging Face 返回圖片二進制數據
+            imgur_url = upload_image_to_imgur_from_bytes(response.content)
+            if imgur_url:
+                logger.info(f"Hugging Face 生成成功,已上傳到 Imgur: {imgur_url}")
+                return imgur_url
+        
+        logger.warning(f"Hugging Face API 失敗: {response.status_code}, {response.text[:200]}")
+        return None
+        
+    except Exception as e:
+        logger.error(f"Hugging Face 生成失敗: {str(e)}")
+        return None
+
+
+def generate_with_craiyon(prompt: str) -> Optional[str]:
+    """
+    使用 Craiyon (DALL-E mini) 生成圖片
+    """
+    try:
+        api_url = "https://api.craiyon.com/v3"
+        
+        payload = {
+            "prompt": prompt,
+            "version": "35s5hfwn9n78gb06",  # v3 模型
+            "negative_prompt": "ugly, blurry, low quality"
+        }
+        
+        headers = {
+            "Content-Type": "application/json"
+        }
+        
+        logger.info("發送請求到 Craiyon...")
+        
+        response = requests.post(
+            api_url,
+            headers=headers,
+            json=payload,
+            timeout=90
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            
+            # Craiyon 返回 base64 編碼的圖片列表
+            if 'images' in result and len(result['images']) > 0:
+                import base64
+                image_data = base64.b64decode(result['images'][0])
+                
+                imgur_url = upload_image_to_imgur_from_bytes(image_data)
+                if imgur_url:
+                    logger.info(f"Craiyon 生成成功,已上傳到 Imgur: {imgur_url}")
+                    return imgur_url
+        
+        logger.warning(f"Craiyon API 失敗: {response.status_code}")
+        return None
+        
+    except Exception as e:
+        logger.error(f"Craiyon 生成失敗: {str(e)}")
+        return None
+
+
+def generate_with_pollinations(prompt: str) -> Optional[str]:
+    """
+    使用 Pollinations AI 生成圖片 (免費無需認證)
+    Pollinations 提供多種模型,包括 FLUX 等高品質模型
+    """
+    try:
+        import urllib.parse
+        
+        # 使用 turbo 模式加快生成速度,使用 flux 模型提升品質
+        if len(prompt) > 500:
+            prompt = prompt[:500]
+        
+        encoded_prompt = urllib.parse.quote(prompt)
+        # 使用 flux 模型並指定高品質參數
+        image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?model=flux&width=1024&height=1024&enhance=true&nologo=true"
+        
+        logger.info(f"使用 Pollinations AI (FLUX 模型): {image_url[:100]}...")
+        
+        # 下載圖片並上傳到 Imgur 獲得永久連結
+        response = requests.get(image_url, timeout=90)
+        
+        if response.status_code == 200:
+            imgur_url = upload_image_to_imgur_from_bytes(response.content)
+            if imgur_url:
+                logger.info(f"圖片已生成並上傳到 Imgur: {imgur_url}")
+                return imgur_url
+        
+        logger.warning(f"Pollinations API 失敗: {response.status_code}")
+        return None
+        
+    except Exception as e:
+        logger.error(f"Pollinations 生成失敗: {str(e)}")
+        return None
 
 
 def upload_image_to_imgur_from_bytes(image_data: bytes) -> Optional[str]:
