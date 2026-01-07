@@ -24,21 +24,15 @@ def generate_image_with_gemini(prompt: str) -> Optional[str]:
     try:
         logger.info(f"開始生成圖片，提示詞: {prompt[:50]}...")
         
-        # 優先使用 Hugging Face Inference API (免費,高品質)
-        logger.info("使用 Hugging Face Inference API...")
-        image_url = generate_with_huggingface(prompt)
-        if image_url:
-            return image_url
-        
-        # 備用方案: Craiyon (免費無需認證)
-        logger.info("Hugging Face 失敗,嘗試 Craiyon...")
-        image_url = generate_with_craiyon(prompt)
-        if image_url:
-            return image_url
-        
-        # 最後備用: Pollinations
-        logger.info("Craiyon 失敗,嘗試 Pollinations...")
+        # 優先使用 Pollinations (最穩定,免費無需認證)
+        logger.info("使用 Pollinations AI...")
         image_url = generate_with_pollinations(prompt)
+        if image_url:
+            return image_url
+        
+        # 備用方案: Hugging Face
+        logger.info("Pollinations 失敗,嘗試 Hugging Face...")
+        image_url = generate_with_huggingface(prompt)
         if image_url:
             return image_url
         
@@ -50,102 +44,6 @@ def generate_image_with_gemini(prompt: str) -> Optional[str]:
         return None
 
 
-def generate_with_replicate(prompt: str) -> Optional[str]:
-    """
-    使用 Replicate API 生成高品質圖片 (FLUX schnell)
-    """
-    try:
-        # Replicate 的公開預測 API
-        api_url = "https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions"
-        
-        payload = {
-            "input": {
-                "prompt": prompt,
-                "num_outputs": 1,
-                "aspect_ratio": "1:1",
-                "output_format": "jpg",
-                "output_quality": 90
-            }
-        }
-        
-        headers = {
-            "Content-Type": "application/json",
-            "Prefer": "wait"  # 等待結果返回
-        }
-        
-        logger.info("發送請求到 Replicate...")
-        
-        response = requests.post(
-            api_url,
-            headers=headers,
-            json=payload,
-            timeout=60
-        )
-        
-        if response.status_code in [200, 201]:
-            result = response.json()
-            
-            # 獲取圖片 URL
-            if 'output' in result and result['output']:
-                image_url = result['output'][0] if isinstance(result['output'], list) else result['output']
-                logger.info(f"Replicate 生成成功: {image_url}")
-                return image_url
-        
-        logger.warning(f"Replicate API 失敗: {response.status_code}")
-        return None
-        
-    except Exception as e:
-        logger.error(f"Replicate 生成失敗: {str(e)}")
-        return None
-
-
-def generate_with_segmind(prompt: str) -> Optional[str]:
-    """
-    使用 Segmind API 生成圖片 (SDXL)
-    """
-    try:
-        api_url = "https://api.segmind.com/v1/sdxl1.0-txt2img"
-        
-        payload = {
-            "prompt": prompt,
-            "negative_prompt": "ugly, blurry, low quality",
-            "samples": 1,
-            "scheduler": "UniPC",
-            "num_inference_steps": 25,
-            "guidance_scale": 7.5,
-            "seed": -1,
-            "img_width": 1024,
-            "img_height": 1024,
-            "base64": False
-        }
-        
-        headers = {
-            "Content-Type": "application/json",
-            "x-api-key": "free"  # 免費額度
-        }
-        
-        logger.info("發送請求到 Segmind...")
-        
-        response = requests.post(
-            api_url,
-            headers=headers,
-            json=payload,
-            timeout=60
-        )
-        
-        if response.status_code == 200:
-            # Segmind 直接返回圖片數據，上傳到 Imgur
-            imgur_url = upload_image_to_imgur_from_bytes(response.content)
-            if imgur_url:
-                logger.info(f"Segmind 生成成功，已上傳到 Imgur: {imgur_url}")
-                return imgur_url
-        
-        logger.warning(f"Segmind API 失敗: {response.status_code}")
-        return None
-        
-    except Exception as e:
-        logger.error(f"Segmind 生成失敗: {str(e)}")
-        return None
 
 
 def generate_with_huggingface(prompt: str) -> Optional[str]:
@@ -154,7 +52,7 @@ def generate_with_huggingface(prompt: str) -> Optional[str]:
     使用 stable-diffusion-xl-base-1.0 模型
     """
     try:
-        api_url = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
+        api_url = "https://router.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
         
         headers = {
             "Content-Type": "application/json"
@@ -191,54 +89,6 @@ def generate_with_huggingface(prompt: str) -> Optional[str]:
         logger.error(f"Hugging Face 生成失敗: {str(e)}")
         return None
 
-
-def generate_with_craiyon(prompt: str) -> Optional[str]:
-    """
-    使用 Craiyon (DALL-E mini) 生成圖片
-    """
-    try:
-        api_url = "https://api.craiyon.com/v3"
-        
-        payload = {
-            "prompt": prompt,
-            "version": "35s5hfwn9n78gb06",  # v3 模型
-            "negative_prompt": "ugly, blurry, low quality"
-        }
-        
-        headers = {
-            "Content-Type": "application/json"
-        }
-        
-        logger.info("發送請求到 Craiyon...")
-        
-        response = requests.post(
-            api_url,
-            headers=headers,
-            json=payload,
-            timeout=90
-        )
-        
-        if response.status_code == 200:
-            result = response.json()
-            
-            # Craiyon 返回 base64 編碼的圖片列表
-            if 'images' in result and len(result['images']) > 0:
-                import base64
-                image_data = base64.b64decode(result['images'][0])
-                
-                imgur_url = upload_image_to_imgur_from_bytes(image_data)
-                if imgur_url:
-                    logger.info(f"Craiyon 生成成功,已上傳到 Imgur: {imgur_url}")
-                    return imgur_url
-        
-        logger.warning(f"Craiyon API 失敗: {response.status_code}")
-        return None
-        
-    except Exception as e:
-        logger.error(f"Craiyon 生成失敗: {str(e)}")
-        return None
-
-
 def generate_with_pollinations(prompt: str) -> Optional[str]:
     """
     使用 Pollinations AI 生成圖片 (免費無需認證)
@@ -252,13 +102,13 @@ def generate_with_pollinations(prompt: str) -> Optional[str]:
             prompt = prompt[:500]
         
         encoded_prompt = urllib.parse.quote(prompt)
-        # 使用 flux 模型並指定高品質參數
-        image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?model=flux&width=1024&height=1024&enhance=true&nologo=true"
+        # 使用 flux 模型,簡化參數避免超時
+        image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&nologo=true"
         
-        logger.info(f"使用 Pollinations AI (FLUX 模型): {image_url[:100]}...")
+        logger.info(f"使用 Pollinations AI: {image_url[:100]}...")
         
-        # 下載圖片並上傳到 Imgur 獲得永久連結
-        response = requests.get(image_url, timeout=90)
+        # 下載圖片並上傳到 Imgur 獲得永久連結(延長超時至 120 秒)
+        response = requests.get(image_url, timeout=120)
         
         if response.status_code == 200:
             imgur_url = upload_image_to_imgur_from_bytes(response.content)
