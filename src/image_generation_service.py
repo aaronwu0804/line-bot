@@ -24,20 +24,20 @@ def generate_image_with_gemini(prompt: str) -> Optional[str]:
     try:
         logger.info(f"開始生成圖片，提示詞: {prompt[:50]}...")
         
-        # 優先嘗試使用 Replicate (高品質 FLUX 模型)
-        image_url = generate_with_replicate(prompt)
-        if image_url:
-            return image_url
-        
-        # 備用方案: 使用 Segmind SDXL
-        logger.info("嘗試備用服務 Segmind...")
+        # 優先使用 Segmind SDXL (無需認證,品質好)
+        logger.info("使用 Segmind SDXL 生成圖片...")
         image_url = generate_with_segmind(prompt)
         if image_url:
             return image_url
         
-        # 最後備用: Pollinations + Imgur
-        logger.info("嘗試最終備用服務 Pollinations...")
-        return generate_with_pollinations(prompt)
+        # 備用方案: Replicate
+        logger.info("Segmind 失敗，嘗試 Replicate...")
+        image_url = generate_with_replicate(prompt)
+        if image_url:
+            return image_url
+        
+        logger.error("所有圖片生成服務均失敗")
+        return None
             
     except Exception as e:
         logger.error(f"生成圖片時發生錯誤: {str(e)}")
@@ -142,36 +142,6 @@ def generate_with_segmind(prompt: str) -> Optional[str]:
         return None
 
 
-def generate_with_pollinations(prompt: str) -> Optional[str]:
-    """
-    使用 Pollinations 作為備用方案
-    """
-    try:
-        import urllib.parse
-        
-        # 截斷提示詞
-        if len(prompt) > 100:
-            prompt = prompt[:100]
-        
-        encoded_prompt = urllib.parse.quote(prompt)
-        image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}"
-        
-        logger.info(f"使用 Pollinations 備用服務: {image_url[:100]}...")
-        
-        # 下載圖片並上傳到 Imgur
-        response = requests.get(image_url, timeout=60)
-        
-        if response.status_code == 200:
-            imgur_url = upload_image_to_imgur_from_bytes(response.content)
-            if imgur_url:
-                logger.info(f"圖片已上傳到 Imgur: {imgur_url}")
-                return imgur_url
-        
-        return None
-        
-    except Exception as e:
-        logger.error(f"Pollinations 備用方案失敗: {str(e)}")
-        return None
 
 
 def upload_image_to_imgur_from_bytes(image_data: bytes) -> Optional[str]:
