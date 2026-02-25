@@ -128,40 +128,63 @@ class PeanutAssistant:
             return {"success": result.get("success"), "response": response}
         
         elif sub_intent == "update":
-            # 更新待辦事項
-            # 提取待辦事項的關鍵內容
-            update_keywords = ["完成了", "做完了", "已經做完", "完成待辦", "完成任務", "標記完成", "已完成"]
+            # 更新待辦事項（支援完成或刪除）
+            # 完成關鍵字和取消/刪除關鍵字
+            complete_keywords = ["完成了", "做完了", "已經做完", "完成待辦", "完成任務", "標記完成", "已完成", "已經完成"]
+            cancel_keywords = ["取消了", "不用了", "不做了", "刪掉", "移除", "取消待辦", "刪除待辦", "取消"]
+            
             todo_keyword = None
+            is_cancel = False
             
-            # 找到觸發詞並提取待辦內容
-            for kw in update_keywords:
+            # 先檢查是否為取消操作
+            for kw in cancel_keywords:
                 if kw in message:
-                    # 提取觸發詞之前的內容作為關鍵字
-                    parts = message.split(kw)
-                    if len(parts) > 0 and parts[0].strip():
-                        todo_keyword = parts[0].strip()
-                        break
-                    # 或者提取觸發詞之後的內容
-                    elif len(parts) > 1 and parts[1].strip():
-                        todo_keyword = parts[1].strip()
+                    is_cancel = True
+                    # 提取待辦內容（移除時間詞和取消詞）
+                    cleaned = message
+                    # 移除時間詞
+                    for time_word in ["明天的", "今天的", "下週的", "明天", "今天", "下週"]:
+                        cleaned = cleaned.replace(time_word, "")
+                    # 移除取消詞
+                    cleaned = cleaned.replace(kw, "").strip()
+                    if cleaned:
+                        todo_keyword = cleaned
                         break
             
-            # 如果還是沒有找到，嘗試用簡單的「完成」關鍵字
-            if not todo_keyword and "完成" in message:
-                # 移除「完成」及其變體，剩下的就是待辦內容
-                cleaned = message.replace("完成了", "").replace("完成", "").strip()
-                if cleaned:
-                    todo_keyword = cleaned
+            # 如果不是取消，檢查完成關鍵字
+            if not is_cancel:
+                for kw in complete_keywords:
+                    if kw in message:
+                        # 提取待辦內容
+                        parts = message.split(kw)
+                        if len(parts) > 0 and parts[0].strip():
+                            todo_keyword = parts[0].strip()
+                            # 移除時間詞
+                            for time_word in ["明天的", "今天的", "下週的"]:
+                                todo_keyword = todo_keyword.replace(time_word, "").strip()
+                            break
+                        elif len(parts) > 1 and parts[1].strip():
+                            todo_keyword = parts[1].strip()
+                            break
             
+            # 執行更新或刪除
             if todo_keyword:
-                result = self.todo_manager.update_todo(user_id, content_keyword=todo_keyword, status="completed")
-                
-                if result.get("success") and result.get("updated_count", 0) > 0:
-                    response = f"✅ 已標記完成：{todo_keyword}\n共更新 {result.get('updated_count', 1)} 個待辦事項"
+                if is_cancel:
+                    # 刪除待辦
+                    result = self.todo_manager.delete_todo(user_id, content_keyword=todo_keyword)
+                    if result.get("success") and result.get("deleted_count", 0) > 0:
+                        response = f"✅ 已刪除待辦：{todo_keyword}\n共刪除 {result.get('deleted_count', 1)} 個待辦事項"
+                    else:
+                        response = f"❌ 找不到包含「{todo_keyword}」的待辦事項\n\n提示：使用關鍵字，例如：\n• 明天的開會取消了\n• 寫報告不用了\n• 刪掉 Python 學習"
                 else:
-                    response = f"❌ 找不到包含「{todo_keyword}」的待辦事項\n\n提示：請確認待辦事項的關鍵字正確，例如：\n• 完成了開會\n• 寫報告已經做完\n• 標記完成 Python 學習"
+                    # 標記完成
+                    result = self.todo_manager.update_todo(user_id, content_keyword=todo_keyword, status="completed")
+                    if result.get("success") and result.get("updated_count", 0) > 0:
+                        response = f"✅ 已標記完成：{todo_keyword}\n共更新 {result.get('updated_count', 1)} 個待辦事項"
+                    else:
+                        response = f"❌ 找不到包含「{todo_keyword}」的待辦事項\n\n提示：使用關鍵字，例如：\n• 開會完成了\n• 寫報告做完了\n• 明天的會議已經開完了"
             else:
-                response = "請告訴我要標記完成哪個待辦事項\n\n範例：\n• 完成了開會\n• 寫報告做完了\n• 標記完成 Python 學習"
+                response = "請告訴我要更新哪個待辦事項\n\n範例：\n• 開會完成了（標記完成）\n• 明天的會議取消了（刪除）\n• 寫報告不用了（刪除）"
             
             return {"success": result.get("success") if todo_keyword else False, "response": response}
         

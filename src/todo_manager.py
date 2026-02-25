@@ -232,30 +232,44 @@ class TodoManager:
         logger.info(f"待辦事項查詢完成: user_id={user_id}, found={len(filtered_todos)}")
         return {"success": True, "todos": filtered_todos, "count": len(filtered_todos)}
     
-    def delete_todo(self, user_id: str, todo_id: str) -> Dict:
+    def delete_todo(self, user_id: str, todo_id: Optional[str] = None, 
+                    content_keyword: Optional[str] = None) -> Dict:
         """
         刪除待辦事項
         
         Args:
             user_id: 用戶 ID
-            todo_id: 待辦事項 ID
+            todo_id: 待辦事項 ID（可選）
+            content_keyword: 內容關鍵字（可選，用於模糊匹配）
             
         Returns:
-            Dict: 刪除結果
+            Dict: 刪除結果，包含 deleted_count
         """
         todos = self._load_todos(user_id)
+        original_count = len(todos)
         
-        # 過濾掉要刪除的項目
-        filtered_todos = [t for t in todos if t["id"] != todo_id]
+        if todo_id:
+            # 根據 ID 刪除
+            filtered_todos = [t for t in todos if t["id"] != todo_id]
+        elif content_keyword:
+            # 根據關鍵字刪除（只刪除待完成的）
+            filtered_todos = [
+                t for t in todos 
+                if not (t["status"] == "pending" and content_keyword in t["content"])
+            ]
+        else:
+            return {"success": False, "error": "必須提供 todo_id 或 content_keyword"}
         
-        if len(filtered_todos) < len(todos):
+        deleted_count = original_count - len(filtered_todos)
+        
+        if deleted_count > 0:
             if self._save_todos(user_id, filtered_todos):
-                logger.info(f"待辦事項刪除成功: user_id={user_id}, todo_id={todo_id}")
-                return {"success": True}
+                logger.info(f"待辦事項刪除成功: user_id={user_id}, deleted_count={deleted_count}")
+                return {"success": True, "deleted_count": deleted_count}
             else:
                 return {"success": False, "error": "儲存失敗"}
         else:
-            return {"success": False, "error": "找不到指定的待辦事項"}
+            return {"success": False, "error": "找不到指定的待辦事項", "deleted_count": 0}
     
     def format_todos_for_display(self, todos: List[Dict]) -> str:
         """
