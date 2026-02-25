@@ -248,6 +248,59 @@ class TodoManager:
         logger.info(f"待辦事項查詢完成: user_id={user_id}, found={len(filtered_todos)}")
         return {"success": True, "todos": filtered_todos, "count": len(filtered_todos)}
     
+    def complete_all_todos(self, user_id: str) -> Dict:
+        """
+        批量完成所有待辦事項
+        
+        Args:
+            user_id: 用戶 ID
+            
+        Returns:
+            Dict: 完成結果，包含 completed_count
+        """
+        todos = self._load_todos(user_id)
+        completed_count = 0
+        
+        for todo in todos:
+            if todo["status"] == "pending":
+                todo["status"] = "completed"
+                todo["completed_at"] = datetime.now().isoformat()
+                completed_count += 1
+        
+        if completed_count > 0:
+            if self._save_todos(user_id, todos):
+                logger.info(f"批量完成待辦事項成功: user_id={user_id}, completed_count={completed_count}")
+                return {"success": True, "completed_count": completed_count}
+            else:
+                return {"success": False, "error": "儲存失敗"}
+        else:
+            return {"success": True, "completed_count": 0, "message": "沒有待完成的事項"}
+    
+    def delete_all_todos(self, user_id: str) -> Dict:
+        """
+        批量刪除所有待辦事項
+        
+        Args:
+            user_id: 用戶 ID
+            
+        Returns:
+            Dict: 刪除結果，包含 deleted_count
+        """
+        todos = self._load_todos(user_id)
+        pending_todos = [t for t in todos if t["status"] == "pending"]
+        deleted_count = len(pending_todos)
+        
+        if deleted_count > 0:
+            # 保留已完成的待辦，刪除待完成的
+            filtered_todos = [t for t in todos if t["status"] != "pending"]
+            if self._save_todos(user_id, filtered_todos):
+                logger.info(f"批量刪除待辦事項成功: user_id={user_id}, deleted_count={deleted_count}")
+                return {"success": True, "deleted_count": deleted_count}
+            else:
+                return {"success": False, "error": "儲存失敗"}
+        else:
+            return {"success": True, "deleted_count": 0, "message": "沒有待刪除的事項"}
+    
     def delete_todo(self, user_id: str, todo_id: Optional[str] = None, 
                     content_keyword: Optional[str] = None) -> Dict:
         """

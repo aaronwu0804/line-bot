@@ -138,6 +138,38 @@ class PeanutAssistant:
         
         elif sub_intent == "update":
             # 更新待辦事項（支援完成或刪除）
+            # 批量操作關鍵字
+            batch_complete_keywords = ["所有待辦事項已完成", "全部待辦已完成", "所有待辦完成了", "全部完成了", "清空待辦", "所有任務完成了"]
+            batch_delete_keywords = ["刪除所有待辦", "清除所有待辦", "全部刪掉", "所有待辦取消", "刪除全部待辦"]
+            
+            # 檢查批量完成
+            for keyword in batch_complete_keywords:
+                if keyword in message:
+                    result = self.todo_manager.complete_all_todos(user_id)
+                    if result.get("success"):
+                        count = result.get("completed_count", 0)
+                        if count > 0:
+                            response = f"✅ 已完成所有待辦事項！\n共完成 {count} 個待辦"
+                        else:
+                            response = "目前沒有待完成的事項"
+                    else:
+                        response = "❌ 批量完成失敗，請稍後再試"
+                    return {"success": result.get("success"), "response": response}
+            
+            # 檢查批量刪除
+            for keyword in batch_delete_keywords:
+                if keyword in message:
+                    result = self.todo_manager.delete_all_todos(user_id)
+                    if result.get("success"):
+                        count = result.get("deleted_count", 0)
+                        if count > 0:
+                            response = f"✅ 已刪除所有待辦事項！\n共刪除 {count} 個待辦"
+                        else:
+                            response = "目前沒有待刪除的事項"
+                    else:
+                        response = "❌ 批量刪除失敗，請稍後再試"
+                    return {"success": result.get("success"), "response": response}
+            
             # 完成關鍵字和取消/刪除關鍵字
             complete_keywords = ["完成了", "做完了", "已經做完", "完成待辦", "完成任務", "標記完成", "已完成", "已經完成"]
             cancel_keywords = ["取消了", "不用了", "不做了", "刪掉", "移除", "取消待辦", "刪除待辦", "取消"]
