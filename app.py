@@ -347,9 +347,7 @@ help_response = """
 - 或喊「小幫手」(例如：小幫手，介紹台灣夜市文化)
 - 或喊「花生」(例如：花生，幫我查一下這個字怎麼念)
 
-🔄 我具備上下文理解功能，一旦開始對話後，您可以直接提問，無需再加上前綴！
-
-⏱️ 對話將在5分鐘無互動後自動結束，或您可以輸入「結束對話」來主動結束
+� 每次發問都需要使用上述前綴來呼叫我！
 
 🌟 AI小幫手花生祝您使用愉快！
 """
@@ -996,11 +994,11 @@ def handle_message(event):
                 )
             return
     
-    # 檢查訊息是否為 AI 對話請求 (活躍對話或匹配關鍵詞)
-    if is_active_conversation or is_ai_request(user_message):
-        # 如果是新的對話或匹配了關鍵詞，將用戶設為活躍對話狀態
+    # 檢查訊息是否為 AI 對話請求 (必須明確呼叫，不再使用活躍對話自動處理)
+    if is_ai_request(user_message):
+        # 將用戶設為活躍對話狀態（用於追蹤，但不自動處理未呼叫的訊息）
         start_conversation(user_id)
-        logger.info("檢測到AI請求或活躍對話，正在處理...")
+        logger.info("檢測到AI請求，正在處理...")
         try:
             # 如果啟用了花生助手增強功能，優先使用
             if PEANUT_ENABLED:
