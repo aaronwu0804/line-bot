@@ -72,6 +72,22 @@ class TodoManager:
         """
         todos = self._load_todos(user_id)
         
+        # 檢查是否有重複的待辦（5分鐘內創建的相同內容）
+        now = datetime.now()
+        for todo in todos:
+            if todo["status"] == "pending" and todo["content"] == content:
+                # 檢查創建時間
+                try:
+                    created_at = datetime.fromisoformat(todo["created_at"])
+                    time_diff = (now - created_at).total_seconds()
+                    
+                    # 如果 5 分鐘內已有相同待辦，返回現有的而非創建新的
+                    if time_diff < 300:  # 5分鐘 = 300秒
+                        logger.info(f"待辦事項已存在（5分鐘內創建），跳過重複創建: user_id={user_id}, content='{content}'")
+                        return {"success": True, "todo": todo, "isDuplicate": True}
+                except:
+                    pass
+        
         # 解析可能的時間資訊
         parsed_due_date = self._parse_due_date(content, due_date)
         

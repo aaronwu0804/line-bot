@@ -150,11 +150,7 @@ class IntentClassifier:
         
         message_lower = message.lower()
         
-        # 檢查是否包含連結
-        if re.search(r'https?://', message):
-            result["intent"] = "link"
-            result["confidence"] = 0.95
-            return result
+        # 連結分析功能已移除，連結將被視為一般聊天訊息
         
         # 檢查待辦事項相關關鍵字（順序很重要：先檢查更具體的查詢和更新，再檢查創建）
         todo_query_keywords = ['查看待辦', '我做了哪些', '待辦事項', '有什麼待辦', '今天要幹嘛', '明天要幹嘛', '查詢待辦', '顯示待辦', '我的待辦', '顯示任務', '查看任務']

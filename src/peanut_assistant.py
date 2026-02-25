@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 整合服務模組 - 花生 AI 小幫手
-整合所有功能：意圖分類、記憶管理、待辦事項、內容儲存、連結分析
+整合所有功能：意圖分類、記憶管理、待辦事項、內容儲存
 """
 
 import logging
@@ -14,7 +14,7 @@ from .intent_classifier import intent_classifier
 from .memory_manager import mem0_manager, local_memory_manager
 from .todo_manager import todo_manager
 from .content_manager import content_manager
-from .link_analyzer import link_analyzer, link_storage
+# 連結分析功能已移除
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +29,7 @@ class PeanutAssistant:
         self.local_memory = local_memory_manager
         self.todo_manager = todo_manager
         self.content_manager = content_manager
-        self.link_analyzer = link_analyzer
-        self.link_storage = link_storage
+        # 連結分析功能已移除
         
         logger.info("花生 AI 小幫手整合服務已初始化")
     
@@ -63,16 +62,13 @@ class PeanutAssistant:
             if intent == "todo":
                 return await self._handle_todo(user_id, clean_message, sub_intent)
             
-            elif intent == "link":
-                return await self._handle_link(user_id, clean_message)
-            
             elif intent == "save_content":
                 return await self._handle_save_content(user_id, clean_message, content_type)
             
             elif intent == "query":
                 return await self._handle_query(user_id, clean_message, query_type)
             
-            else:  # other - 一般聊天
+            else:  # other - 一般聊天（包含連結）
                 return await self._handle_chat(user_id, clean_message)
         
         except Exception as e:
@@ -105,8 +101,21 @@ class PeanutAssistant:
         """處理待辦事項相關請求"""
         
         if sub_intent == "create":
-            # 新增待辦事項
-            result = self.todo_manager.create_todo(user_id, message)
+            # 新增待辦事項 - 先移除創建關鍵字
+            create_keywords = ['提醒我', '提醒', '我要', '我明天要', '我今天要', '新增待辦', '新增事項', '新增任務', '新增', '幫我記', '記得', '別忘了', '添加任務', '添加事項', '加入待辦']
+            
+            todo_content = message
+            # 移除創建關鍵字
+            for keyword in create_keywords:
+                if todo_content.startswith(keyword):
+                    todo_content = todo_content[len(keyword):].strip()
+                    break
+            
+            # 如果移除後內容為空，提示用戶
+            if not todo_content:
+                return {"success": False, "response": "請告訴我要新增什麼待辦事項\n\n範例：\n• 花生 提醒 2/27 去看球賽\n• 花生 新增 明天開會\n• 花生 加入待辦 寫報告"}
+            
+            result = self.todo_manager.create_todo(user_id, todo_content)
             
             if result.get("success"):
                 todo = result["todo"]
@@ -231,58 +240,7 @@ class PeanutAssistant:
             formatted = self.todo_manager.format_todos_for_display(result["todos"])
             return {"success": True, "response": formatted}
     
-    async def _handle_link(self, user_id: str, message: str) -> Dict:
-        """處理連結分享"""
-        
-        # 提取連結
-        urls = self.link_analyzer.extract_urls(message)
-        
-        if not urls:
-            return {
-                "success": False,
-                "response": "沒有找到有效的連結"
-            }
-        
-        # 分析連結
-        if len(urls) == 1:
-            url = urls[0]
-            
-            # 分析單個連結
-            analysis_result = await self.link_analyzer.analyze_link(url)
-            
-            if analysis_result.get("success"):
-                # 儲存連結
-                analysis_text = analysis_result.get("analysis", "")
-                
-                # 嘗試從分析結果中提取標題
-                title = url  # 預設使用 URL 作為標題
-                
-                self.link_storage.save_link(
-                    user_id,
-                    url,
-                    title=title,
-                    summary=analysis_text[:200] if len(analysis_text) > 200 else analysis_text
-                )
-                
-                # 格式化回應
-                response = self.link_analyzer.format_analysis_for_display(analysis_result)
-            else:
-                response = f"❌ 分析連結失敗：{analysis_result.get('error', '未知錯誤')}"
-        
-        else:
-            # 分析多個連結
-            analysis_result = await self.link_analyzer.analyze_multiple_links(urls)
-            
-            if analysis_result.get("success"):
-                # 儲存所有連結
-                for url in urls:
-                    self.link_storage.save_link(user_id, url)
-                
-                response = self.link_analyzer.format_analysis_for_display(analysis_result)
-            else:
-                response = f"❌ 分析連結失敗：{analysis_result.get('error', '未知錯誤')}"
-        
-        return {"success": True, "response": response}
+    # 連結分析功能已移除
     
     async def _handle_save_content(self, user_id: str, message: str, content_type: Optional[str]) -> Dict:
         """處理內容儲存"""
