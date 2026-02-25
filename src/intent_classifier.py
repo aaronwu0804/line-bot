@@ -190,10 +190,32 @@ class IntentClassifier:
         recommendation_keywords = ['推薦', '介紹一些', '有什麼好的']
         feedback_keywords = ['建議', '意見', '看法', '想法']
         history_keywords = ['之前', '以前', '過去', '上次', '聊過什麼']
-        knowledge_query_keywords = ['我學了什麼', '我的知識', '查看知識', '有什麼知識', '我學過', '查詢知識', '顯示知識', '之前學到', '我記了什麼', '查看筆記']
+        # 知識查詢關鍵字（加入單字查詢，優先度較高）
+        knowledge_query_keywords = ['我學了什麼', '我的知識', '查看知識', '有什麼知識', '我學過', '查詢知識', '顯示知識', '之前學到', '我記了什麼', '查看筆記', '我學了什麼東西']
+        # 內容查詢關鍵字
         content_query_keywords = ['我的靈感', '我的音樂', '我的記憶', '查看內容', '顯示內容']
+        # 單字查詢（必須是完整訊息且很短）
+        single_word_queries = ['知識', '待辦', '靈感', '筆記']
         
-        # 優先檢查知識和內容查詢
+        # 優先檢查單字查詢（訊息很短且匹配）
+        if len(message) <= 3:
+            if '知識' in message or '筆記' in message:
+                result["intent"] = "query"
+                result["queryType"] = "knowledge"
+                result["confidence"] = 0.95
+                return result
+            elif '待辦' in message:
+                result["intent"] = "todo"
+                result["subIntent"] = "query"
+                result["confidence"] = 0.95
+                return result
+            elif '靈感' in message:
+                result["intent"] = "query"
+                result["queryType"] = "content"
+                result["confidence"] = 0.95
+                return result
+        
+        # 檢查知識和內容查詢
         for keyword in knowledge_query_keywords:
             if keyword in message:
                 result["intent"] = "query"
