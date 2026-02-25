@@ -188,12 +188,22 @@ class IntentClassifier:
         recommendation_keywords = ['推薦', '介紹一些', '有什麼好的']
         feedback_keywords = ['建議', '意見', '看法', '想法']
         history_keywords = ['之前', '以前', '過去', '上次', '聊過什麼']
+        # 幫助和功能查詢關鍵字（優先級最高）
+        help_keywords = ['你會什麼', '有什麼功能', '可以做什麼', '會做什麼', '能做什麼', '怎麼用', '使用說明', '使用教學', '教學', '說明', 'help', '幫助', '功能列表', '功能清單', '指令列表']
         # 知識查詢關鍵字（加入單字查詢，優先度較高）
         knowledge_query_keywords = ['我學了什麼', '我的知識', '查看知識', '有什麼知識', '我學過', '查詢知識', '顯示知識', '之前學到', '我記了什麼', '查看筆記', '我學了什麼東西']
         # 內容查詢關鍵字
         content_query_keywords = ['我的靈感', '我的音樂', '我的記憶', '查看內容', '顯示內容']
         # 單字查詢（必須是完整訊息且很短）
         single_word_queries = ['知識', '待辦', '靈感', '筆記']
+        
+        # 優先檢查幫助關鍵字
+        for keyword in help_keywords:
+            if keyword in message:
+                result["intent"] = "query"
+                result["queryType"] = "help"
+                result["confidence"] = 0.95
+                return result
         
         # 優先檢查單字查詢（訊息很短且匹配）
         if len(message) <= 3:
