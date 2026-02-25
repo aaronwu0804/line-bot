@@ -7,6 +7,7 @@
 import logging
 from typing import Dict, Optional
 import asyncio
+from datetime import datetime
 
 # 導入各個管理器
 from .intent_classifier import intent_classifier
@@ -128,41 +129,78 @@ class PeanutAssistant:
         
         elif sub_intent == "update":
             # 更新待辦事項
-            # 嘗試從訊息中提取關鍵字
-            keywords = ["完成", "做完", "取消", "刪除"]
-            keyword = None
+            # 提取待辦事項的關鍵內容
+            update_keywords = ["完成了", "做完了", "已經做完", "完成待辦", "完成任務", "標記完成", "已完成"]
+            todo_keyword = None
             
-            for kw in keywords:
+            # 找到觸發詞並提取待辦內容
+            for kw in update_keywords:
                 if kw in message:
-                    # 提取待辦事項名稱
+                    # 提取觸發詞之前的內容作為關鍵字
                     parts = message.split(kw)
-                    if len(parts) > 0:
-                        keyword = parts[0].strip()
+                    if len(parts) > 0 and parts[0].strip():
+                        todo_keyword = parts[0].strip()
+                        break
+                    # 或者提取觸發詞之後的內容
+                    elif len(parts) > 1 and parts[1].strip():
+                        todo_keyword = parts[1].strip()
                         break
             
-            if keyword:
-                result = self.todo_manager.update_todo(user_id, content_keyword=keyword)
-                
-                if result.get("success"):
-                    response = f"✅ 已更新 {result.get('updated_count', 1)} 個待辦事項"
-                else:
-                    response = "❌ 找不到匹配的待辦事項"
-            else:
-                response = "請告訴我要更新哪個待辦事項"
+            # 如果還是沒有找到，嘗試用簡單的「完成」關鍵字
+            if not todo_keyword and "完成" in message:
+                # 移除「完成」及其變體，剩下的就是待辦內容
+                cleaned = message.replace("完成了", "").replace("完成", "").strip()
+                if cleaned:
+                    todo_keyword = cleaned
             
-            return {"success": result.get("success") if keyword else False, "response": response}
+            if todo_keyword:
+                result = self.todo_manager.update_todo(user_id, content_keyword=todo_keyword, status="completed")
+                
+                if result.get("success") and result.get("updated_count", 0) > 0:
+                    response = f"✅ 已標記完成：{todo_keyword}\n共更新 {result.get('updated_count', 1)} 個待辦事項"
+                else:
+                    response = f"❌ 找不到包含「{todo_keyword}」的待辦事項\n\n提示：請確認待辦事項的關鍵字正確，例如：\n• 完成了開會\n• 寫報告已經做完\n• 標記完成 Python 學習"
+            else:
+                response = "請告訴我要標記完成哪個待辦事項\n\n範例：\n• 完成了開會\n• 寫報告做完了\n• 標記完成 Python 學習"
+            
+            return {"success": result.get("success") if todo_keyword else False, "response": response}
         
         elif sub_intent == "query":
-            # 查詢待辦事項
-            result = self.todo_manager.query_todos(user_id, status="pending")
+            # 查詢待辦事項（同時顯示待完成和最近已完成的）
+            pending_result = self.todo_manager.query_todos(user_id, status="pending")
+            completed_result = self.todo_manager.query_todos(user_id, status="completed")
             
-            if result.get("success"):
-                formatted = self.todo_manager.format_todos_for_display(result["todos"])
-                response = formatted
+            has_pending = pending_result.get("success") and pending_result.get("todos")
+            has_completed = completed_result.get("success") and completed_result.get("todos")
+            
+            if has_pending or has_completed:
+                response_parts = []
+                
+                # 顯示待完成的
+                if has_pending:
+                    formatted_pending = self.todo_manager.format_todos_for_display(
+                        pending_result["todos"]
+                    )
+                    response_parts.append(formatted_pending)
+                
+                # 顯示最近已完成的（最多顯示 5 個）
+                if has_completed:
+                    recent_completed = completed_result["todos"][:5]
+                    if recent_completed:
+                        response_parts.append("\n✅ 最近已完成：")
+                        for i, todo in enumerate(recent_completed, 1):
+                            completed_at = todo.get("completed_at", "")
+                            try:
+                                date_str = datetime.fromisoformat(completed_at).strftime("%m/%d")
+                            except:
+                                date_str = ""
+                            response_parts.append(f"{i}. {todo['content']} (完成於：{date_str})")
+                
+                response = "\n".join(response_parts)
             else:
-                response = "查詢待辦事項時發生錯誤"
+                response = "目前沒有待辦事項"
             
-            return {"success": result.get("success"), "response": response}
+            return {"success": True, "response": response}
         
         else:
             # 預設顯示所有待辦事項
@@ -255,7 +293,48 @@ class PeanutAssistant:
     async def _handle_query(self, user_id: str, message: str, query_type: Optional[str]) -> Dict:
         """處理查詢請求"""
         
-        # 先搜尋相關記憶
+        # 處理知識查詢
+        if query_type == "knowledge":
+            result = self.content_manager.query_contents(user_id, content_type="knowledge")
+            if result.get("success") and result.get("contents"):
+                formatted = self.content_manager.format_contents_for_display(
+                    result["contents"], 
+                    title="📚 您儲存的知識"
+                )
+                return {"success": True, "response": formatted}
+            else:
+                return {"success": True, "response": "您還沒有儲存任何知識喔！"}
+        
+        # 處理內容查詢
+        elif query_type == "content":
+            # 判斷要查詢哪種類型
+            content_type = None
+            if "靈感" in message:
+                content_type = "insight"
+            elif "音樂" in message:
+                content_type = "music"
+            elif "記憶" in message or "生活" in message:
+                content_type = "life"
+            
+            result = self.content_manager.query_contents(user_id, content_type=content_type)
+            if result.get("success") and result.get("contents"):
+                type_emoji = {
+                    "insight": "💡",
+                    "knowledge": "📚",
+                    "music": "🎵",
+                    "life": "🌟",
+                    "memory": "💭"
+                }
+                title = f"{type_emoji.get(content_type, '📝')} 您的{content_type or '所有'}內容"
+                formatted = self.content_manager.format_contents_for_display(
+                    result["contents"], 
+                    title=title
+                )
+                return {"success": True, "response": formatted}
+            else:
+                return {"success": True, "response": "目前沒有相關內容喔！"}
+        
+        # 其他查詢類型：搜尋相關記憶
         memories = []
         
         if self.mem0_manager.enabled:

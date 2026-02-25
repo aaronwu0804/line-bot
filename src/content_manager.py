@@ -194,12 +194,13 @@ class ContentManager:
         
         return {"success": True, "statistics": stats}
     
-    def format_contents_for_display(self, contents: List[Dict]) -> str:
+    def format_contents_for_display(self, contents: List[Dict], title: str = None) -> str:
         """
         格式化內容為顯示文字
         
         Args:
             contents: 內容列表
+            title: 自訂標題（可選）
             
         Returns:
             str: 格式化的文字
@@ -207,7 +208,8 @@ class ContentManager:
         if not contents:
             return "目前沒有儲存的內容"
         
-        lines = ["📝 您儲存的內容：\n"]
+        # 使用自訂標題或預設標題
+        lines = [f"{title if title else '📝 您儲存的內容'}：\n"]
         
         # 按類型分組
         grouped_contents = {}

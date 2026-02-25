@@ -539,6 +539,39 @@ def generate_greeting_message(weather_info=None):
     return selected_greeting
 
 def send_morning_message():
+    """發送早安訊息和天氣預報，使用增強型 Gemini API 和錯誤處理
+    此函數會執行以下主要功能：
+    1. 初始化並檢查 API 監控模組（可選）
+    2. 檢查 Gemini API 狀態和可用性，支援指數退避重試
+    3. 設定 LINE Bot API 配置和驗證必要的環境變數
+    4. 獲取天氣資訊（優先使用備用天氣資料）
+    5. 生成智能問候語（支援 AI 生成或預設問候語）
+    6. 獲取 Pinterest 圖片並處理本地檔案上傳到圖床
+    7. 發送包含文字和圖片的 LINE 訊息
+    8. 清理超過 7 天的舊圖片檔案
+    環境變數需求：
+        LINE_CHANNEL_ACCESS_TOKEN: LINE Bot 頻道存取權杖
+        LINE_USER_ID: 目標使用者 ID
+        CWB_API_KEY: 中央氣象局 API 金鑰（可選）
+        GEMINI_API_KEY: Google Gemini API 金鑰（可選）
+    錯誤處理：
+        - API 配額限制時會自動重試（指數退避）
+        - 圖片獲取失敗時會使用備用圖片
+        - 支援新舊版 LINE SDK 參數格式
+        - 發送失敗時會嘗試備用文字訊息
+        - 所有錯誤都會記錄但不會中斷程式執行
+    功能特色：
+        - 自動檢測 AI 生成的問候語（基於處理時間）
+        - 支援本地圖片上傳到圖床服務
+        - 智能圖片 URL 格式檢查和 HTTPS 轉換
+        - API 使用情況監控和記錄
+        - 自動清理舊圖片檔案
+    Raises:
+        ValueError: 當必要的環境變數未設定時
+        Exception: 其他執行時錯誤會被捕獲並記錄，不會中斷程式
+    Note:
+        此函數設計為容錯性高，即使部分功能失敗也會嘗試發送基本的文字訊息
+    """
     """發送早安訊息和天氣預報，使用增強型 Gemini API 和錯誤處理"""
     try:
         # 嘗試導入 API 監控模塊

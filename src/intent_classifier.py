@@ -158,7 +158,7 @@ class IntentClassifier:
         
         # 檢查待辦事項相關關鍵字（順序很重要：先檢查更具體的查詢和更新，再檢查創建）
         todo_query_keywords = ['查看待辦', '我做了哪些', '待辦事項', '有什麼待辦', '今天要幹嘛', '明天要幹嘛', '查詢待辦', '顯示待辦', '我的待辦', '顯示任務', '查看任務']
-        todo_update_keywords = ['完成了', '做完了', '已經做完', '取消', '刪除', '完成']
+        todo_update_keywords = ['完成了', '做完了', '已經做完', '取消待辦', '刪除待辦', '完成待辦', '已完成', '標記完成', '完成任務']
         todo_create_keywords = ['提醒我', '我要', '我明天要', '我今天要', '新增待辦', '幫我記', '記得', '別忘了', '添加任務', '新增任務']
         
         # 優先檢查查詢（避免「待辦事項」被誤判為創建）
@@ -181,7 +181,7 @@ class IntentClassifier:
         for keyword in todo_create_keywords:
             if keyword in message:
                 result["intent"] = "todo"
-                result["subIntent"] = "query"
+                result["subIntent"] = "create"  # 修正：應該是 create 而非 query
                 result["confidence"] = 0.85
                 return result
         
@@ -190,6 +190,23 @@ class IntentClassifier:
         recommendation_keywords = ['推薦', '介紹一些', '有什麼好的']
         feedback_keywords = ['建議', '意見', '看法', '想法']
         history_keywords = ['之前', '以前', '過去', '上次', '聊過什麼']
+        knowledge_query_keywords = ['我學了什麼', '我的知識', '查看知識', '有什麼知識', '我學過', '查詢知識', '顯示知識', '之前學到', '我記了什麼', '查看筆記']
+        content_query_keywords = ['我的靈感', '我的音樂', '我的記憶', '查看內容', '顯示內容']
+        
+        # 優先檢查知識和內容查詢
+        for keyword in knowledge_query_keywords:
+            if keyword in message:
+                result["intent"] = "query"
+                result["queryType"] = "knowledge"
+                result["confidence"] = 0.9
+                return result
+        
+        for keyword in content_query_keywords:
+            if keyword in message:
+                result["intent"] = "query"
+                result["queryType"] = "content"
+                result["confidence"] = 0.9
+                return result
         
         is_query = any(keyword in message for keyword in query_keywords)
         
