@@ -30,12 +30,24 @@ except ImportError:
     CACHE_ENABLED = False
     logging.warning("無法導入回應緩存模塊，跳過緩存功能")
 
+# 導入花生助手新功能模組
+try:
+    from src.peanut_assistant import peanut_assistant
+    import asyncio
+    PEANUT_ENABLED = True
+    logging.info("花生助手增強功能已啟用")
+except ImportError as e:
+    PEANUT_ENABLED = False
+    logging.warning(f"花生助手增強功能未啟用: {e}")
+
 print("="*80)
-print(f"啟動 LINE Bot Webhook 智能回應服務 v2.1.0 - {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+print(f"啟動 LINE Bot Webhook 智能回應服務 v2.2.0 - {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 print("增強版 - 直接從app.py啟動，避免LINE SDK衝突")
 print("整合Gemini AI回應，提供智能對話功能")
 print("添加自動保活機制，防止Render休眠")
 print("新增緩存系統及錯誤處理，提升穩定性")
+if PEANUT_ENABLED:
+    print("✨ 花生助手增強功能：待辦事項、內容儲存、連結分析、長期記憶")
 print("="*80)
 
 # 初始化Flask應用
@@ -948,6 +960,23 @@ def handle_message(event):
                 )
             return
     
+    # 檢查是否為「使用說明」請求
+    if user_message.strip() in ['使用說明', '說明', 'help', '幫助', '功能', '花生說明']:
+        if PEANUT_ENABLED:
+            usage_guide = peanut_assistant.get_usage_guide()
+        else:
+            usage_guide = get_help_message()
+        
+        with ApiClient(configuration) as api_client:
+            line_bot_api = MessagingApi(api_client)
+            line_bot_api.reply_message(
+                ReplyMessageRequest(
+                    reply_token=reply_token,
+                    messages=[TextMessage(text=usage_guide)]
+                )
+            )
+        return
+    
     # 檢查用戶是否處於活躍對話狀態
     current_time = time.time()
     is_active_conversation = check_active_conversation(user_id, current_time)
@@ -973,6 +1002,70 @@ def handle_message(event):
         start_conversation(user_id)
         logger.info("檢測到AI請求或活躍對話，正在處理...")
         try:
+            # 如果啟用了花生助手增強功能，優先使用
+            if PEANUT_ENABLED:
+                logger.info("使用花生助手處理訊息")
+                
+                # 先回覆「正在處理」訊息
+                with ApiClient(configuration) as api_client:
+                    line_bot_api = MessagingApi(api_client)
+                    line_bot_api.reply_message(
+                        ReplyMessageRequest(
+                            reply_token=reply_token,
+                            messages=[TextMessage(text="🤔 讓我想想...")]
+                        )
+                    )
+                
+                # 使用花生助手處理訊息
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                peanut_result = loop.run_until_complete(
+                    peanut_assistant.process_message(user_id, user_message)
+                )
+                loop.close()
+                
+                # 檢查是否需要 AI 回應
+                if peanut_result.get("needs_ai_response"):
+                    # 需要生成 AI 回應
+                    query = extract_query(user_message)
+                    context = peanut_result.get("context", "")
+                    conversation_history = conversation_histories.get(user_id, [])
+                    
+                    # 構建帶上下文的提示
+                    if context:
+                        full_query = f"以下是用戶的相關記憶：\n{context}\n\n用戶問題：{query}\n\n請根據這些資訊提供個人化的回應。"
+                    else:
+                        full_query = query
+                    
+                    ai_response = get_ai_response(full_query)
+                    update_conversation_history(user_id, query, ai_response)
+                    
+                    # 推送 AI 回應
+                    with ApiClient(configuration) as api_client:
+                        line_bot_api = MessagingApi(api_client)
+                        line_bot_api.push_message(
+                            PushMessageRequest(
+                                to=chat_id,
+                                messages=[TextMessage(text=ai_response)]
+                            )
+                        )
+                else:
+                    # 直接推送花生助手的回應
+                    response_text = peanut_result.get("response", "")
+                    if response_text:
+                        with ApiClient(configuration) as api_client:
+                            line_bot_api = MessagingApi(api_client)
+                            line_bot_api.push_message(
+                                PushMessageRequest(
+                                    to=chat_id,
+                                    messages=[TextMessage(text=response_text)]
+                                )
+                            )
+                
+                logger.info("花生助手處理完成")
+                return
+            
+            # 原有的處理邏輯（當花生助手未啟用時）
             # 取出真實查詢內容（去除前綴）
             query = user_message
             if is_ai_request(user_message):
